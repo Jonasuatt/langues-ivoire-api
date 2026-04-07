@@ -120,4 +120,11 @@ const updateLesson = async (req, res, next) => {
   }
 };
 
-module.exports = { getLessonsByLanguage, getLesson, submitExercise, createLesson, updateLesson };
+const deleteLesson = async (req, res, next) => {
+  try {
+    await prisma.lesson.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getLessonsByLanguage, getLesson, submitExercise, createLesson, updateLesson, deleteLesson };

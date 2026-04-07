@@ -61,4 +61,18 @@ const createCulturalItem = async (req, res, next) => {
   }
 };
 
-module.exports = { getTodayCultural, getCulturalItems, createCulturalItem };
+const updateCulturalItem = async (req, res, next) => {
+  try {
+    const item = await prisma.culturalItem.update({ where: { id: req.params.id }, data: req.body });
+    res.json(item);
+  } catch (err) { next(err); }
+};
+
+const deleteCulturalItem = async (req, res, next) => {
+  try {
+    await prisma.culturalItem.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getTodayCultural, getCulturalItems, createCulturalItem, updateCulturalItem, deleteCulturalItem };
