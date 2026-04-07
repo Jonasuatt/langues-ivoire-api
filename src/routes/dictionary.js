@@ -3,7 +3,7 @@ const { authenticate, requireEditor, optionalAuth } = require('../middleware/aut
 const {
   getDictionary, searchDictionary, getDictionaryEntry,
   contributeWord, contributePhrase,
-  adminCreateWord, adminUpdateWord, adminDeleteWord,
+  adminCreateWord, adminUpdateWord, adminDeleteWord, generateAudio,
 } = require('../controllers/dictionaryController');
 
 router.get('/search', optionalAuth, searchDictionary);
@@ -14,5 +14,6 @@ router.post('/contribute/phrase', authenticate, contributePhrase);
 router.post('/admin/word', authenticate, requireEditor, adminCreateWord);
 router.patch('/admin/word/:id', authenticate, requireEditor, adminUpdateWord);
 router.delete('/admin/word/:id', authenticate, requireEditor, adminDeleteWord);
+router.post('/admin/generate-audio', authenticate, requireEditor, generateAudio);
 
 module.exports = router;

@@ -116,11 +116,11 @@ const contributePhrase = async (req, res, next) => {
 
 const adminCreateWord = async (req, res, next) => {
   try {
-    const { langueCode, mot, traduction, transcription, categorie, exemplePhrase } = req.body;
+    const { langueCode, mot, traduction, transcription, categorie, exemplePhrase, audioUrl, exempleTraduction } = req.body;
     const language = await prisma.language.findFirst({ where: { code: langueCode } });
     if (!language) return res.status(404).json({ error: 'Langue non trouvée' });
     const entry = await prisma.dictionaryEntry.create({
-      data: { languageId: language.id, langueCode, mot, traduction, transcription, categorie, exemplePhrase, status: 'PUBLISHED' },
+      data: { languageId: language.id, langueCode, mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, status: 'PUBLISHED' },
     });
     res.status(201).json(entry);
   } catch (err) { next(err); }
@@ -128,13 +128,45 @@ const adminCreateWord = async (req, res, next) => {
 
 const adminUpdateWord = async (req, res, next) => {
   try {
-    const { mot, traduction, transcription, categorie, exemplePhrase, status } = req.body;
+    const { mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, status } = req.body;
     const entry = await prisma.dictionaryEntry.update({
       where: { id: req.params.id },
-      data: { mot, traduction, transcription, categorie, exemplePhrase, status },
+      data: { mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, status },
     });
     res.json(entry);
   } catch (err) { next(err); }
+};
+
+const generateAudio = async (req, res, next) => {
+  try {
+    const { text, languageCode, speed } = req.body;
+    if (!text || !languageCode) return res.status(400).json({ error: 'text et languageCode requis' });
+
+    const AI_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    const response = await fetch(`${AI_URL}/tts/synthesize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, languageCode, speed: speed || 1.0 }),
+    });
+
+    if (!response.ok) throw new Error('Service TTS indisponible');
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const audioUrl = `data:audio/wav;base64,${base64}`;
+
+    // Si un entryId est fourni, mettre à jour l'entrée
+    if (req.body.entryId) {
+      await prisma.dictionaryEntry.update({
+        where: { id: req.body.entryId },
+        data: { audioUrl },
+      });
+    }
+
+    res.json({ audioUrl, size: arrayBuffer.byteLength });
+  } catch (err) {
+    res.status(503).json({ error: 'Service de synthèse vocale indisponible. Ajoutez une URL audio manuellement.' });
+  }
 };
 
 const adminDeleteWord = async (req, res, next) => {
@@ -144,4 +176,4 @@ const adminDeleteWord = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getDictionary, searchDictionary, getDictionaryEntry, contributeWord, contributePhrase, adminCreateWord, adminUpdateWord, adminDeleteWord };
+module.exports = { getDictionary, searchDictionary, getDictionaryEntry, contributeWord, contributePhrase, adminCreateWord, adminUpdateWord, adminDeleteWord, generateAudio };
