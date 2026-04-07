@@ -94,4 +94,32 @@ const requestPronunciation = async (req, res, next) => {
   }
 };
 
-module.exports = { getTutors, getTutor, chatWithTutor, requestPronunciation };
+const createTutor = async (req, res, next) => {
+  try {
+    const tutor = await prisma.tutor.create({
+      data: req.body,
+      include: { language: { select: { nom: true, code: true } } },
+    });
+    res.status(201).json(tutor);
+  } catch (err) { next(err); }
+};
+
+const updateTutor = async (req, res, next) => {
+  try {
+    const tutor = await prisma.tutor.update({
+      where: { id: req.params.id },
+      data: req.body,
+      include: { language: { select: { nom: true, code: true } } },
+    });
+    res.json(tutor);
+  } catch (err) { next(err); }
+};
+
+const deleteTutor = async (req, res, next) => {
+  try {
+    await prisma.tutor.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getTutors, getTutor, chatWithTutor, requestPronunciation, createTutor, updateTutor, deleteTutor };
