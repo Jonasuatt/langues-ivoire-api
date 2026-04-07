@@ -1,0 +1,78 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+
+const authRoutes = require('./routes/auth');
+const languageRoutes = require('./routes/languages');
+const dictionaryRoutes = require('./routes/dictionary');
+const lessonRoutes = require('./routes/lessons');
+const contributionRoutes = require('./routes/contributions');
+const culturalRoutes = require('./routes/cultural');
+const tutorRoutes = require('./routes/tutors');
+const progressRoutes = require('./routes/progress');
+const adminRoutes = require('./routes/admin');
+const syncRoutes = require('./routes/sync');
+const analyticsRoutes = require('./routes/analytics');
+const { errorHandler } = require('./middleware/errorHandler');
+
+const app = express();
+
+// Sécurité
+app.use(helmet());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  credentials: true,
+}));
+
+// Rate limiting global
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: { error: 'Trop de requêtes, réessayez plus tard.' },
+});
+app.use('/api/', limiter);
+
+// Corps des requêtes
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Logs
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/languages', languageRoutes);
+app.use('/api/dictionary', dictionaryRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/contributions', contributionRoutes);
+app.use('/api/cultural', culturalRoutes);
+app.use('/api/tutors', tutorRoutes);
+app.use('/api/users', progressRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/sync', syncRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
+// Santé
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', version: '1.0.0', project: 'Langues Ivoire' });
+});
+
+// 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route non trouvée' });
+});
+
+// Gestionnaire d'erreurs
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Langues Ivoire API démarrée sur le port ${PORT}`);
+});
+
+module.exports = app;
