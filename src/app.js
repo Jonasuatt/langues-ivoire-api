@@ -22,9 +22,11 @@ const app = express();
 
 // Sécurité
 app.use(helmet());
+const allowedOrigins = process.env.ALLOWED_ORIGINS || '*';
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
-  credentials: true,
+  origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(','),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Rate limiting global
