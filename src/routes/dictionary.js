@@ -3,12 +3,16 @@ const { authenticate, requireEditor, optionalAuth } = require('../middleware/aut
 const {
   getDictionary, searchDictionary, getDictionaryEntry,
   contributeWord, contributePhrase,
+  adminCreateWord, adminUpdateWord, adminDeleteWord,
 } = require('../controllers/dictionaryController');
 
-router.get('/:langue', optionalAuth, getDictionary);
 router.get('/search', optionalAuth, searchDictionary);
 router.get('/entry/:id', getDictionaryEntry);
+router.get('/:langue', optionalAuth, getDictionary);
 router.post('/contribute/word', authenticate, contributeWord);
 router.post('/contribute/phrase', authenticate, contributePhrase);
+router.post('/admin/word', authenticate, requireEditor, adminCreateWord);
+router.patch('/admin/word/:id', authenticate, requireEditor, adminUpdateWord);
+router.delete('/admin/word/:id', authenticate, requireEditor, adminDeleteWord);
 
 module.exports = router;

@@ -114,4 +114,34 @@ const contributePhrase = async (req, res, next) => {
   }
 };
 
-module.exports = { getDictionary, searchDictionary, getDictionaryEntry, contributeWord, contributePhrase };
+const adminCreateWord = async (req, res, next) => {
+  try {
+    const { langueCode, mot, traduction, transcription, categorie, exemplePhrase } = req.body;
+    const language = await prisma.language.findFirst({ where: { code: langueCode } });
+    if (!language) return res.status(404).json({ error: 'Langue non trouvée' });
+    const entry = await prisma.dictionaryEntry.create({
+      data: { languageId: language.id, langueCode, mot, traduction, transcription, categorie, exemplePhrase, status: 'PUBLISHED' },
+    });
+    res.status(201).json(entry);
+  } catch (err) { next(err); }
+};
+
+const adminUpdateWord = async (req, res, next) => {
+  try {
+    const { mot, traduction, transcription, categorie, exemplePhrase, status } = req.body;
+    const entry = await prisma.dictionaryEntry.update({
+      where: { id: req.params.id },
+      data: { mot, traduction, transcription, categorie, exemplePhrase, status },
+    });
+    res.json(entry);
+  } catch (err) { next(err); }
+};
+
+const adminDeleteWord = async (req, res, next) => {
+  try {
+    await prisma.dictionaryEntry.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getDictionary, searchDictionary, getDictionaryEntry, contributeWord, contributePhrase, adminCreateWord, adminUpdateWord, adminDeleteWord };
