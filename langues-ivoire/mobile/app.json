@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Langues Ivoire",
+    "slug": "langues-ivoire",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B3D2E"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ci.languesivoire.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B3D2E"
+      },
+      "package": "ci.languesivoire.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-av",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permettre à Langues Ivoire d'accéder à la caméra pour les contributions."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#F47920"
+        }
+      ]
+    ],
+    "scheme": "languesivoire",
+    "extra": {
+      "apiUrl": "https://api-production-7107f.up.railway.app/api",
+      "eas": {
+        "projectId": "292b386c-7d34-440d-a4a9-3035288609a3"
+      }
+    },
+    "owner": "jonaso72"
+  }
+}
