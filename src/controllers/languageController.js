@@ -11,7 +11,7 @@ const getLanguages = async (req, res, next) => {
       where,
       orderBy: { ordreAffichage: 'asc' },
       include: {
-        tutor: { select: { nomAvatar: true, imageUrl: true } },
+        tutors: { select: { nomAvatar: true, imageUrl: true, genre: true } },
         _count: { select: { lessons: true, dictEntries: { where: { status: 'PUBLISHED' } } } },
       },
     });
@@ -26,7 +26,7 @@ const getLanguage = async (req, res, next) => {
     const language = await prisma.language.findFirst({
       where: { OR: [{ id: req.params.id }, { code: req.params.id }], isActive: true },
       include: {
-        tutor: true,
+        tutors: true,
         _count: {
           select: {
             lessons: true,

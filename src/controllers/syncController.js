@@ -12,7 +12,7 @@ const fullSync = async (req, res, next) => {
     }
 
     const [languages, lessons, dictEntries, phrases, tutors, culturalItems] = await Promise.all([
-      prisma.language.findMany({ where: { isActive: true }, include: { tutor: { select: { nomAvatar: true, imageUrl: true } } } }),
+      prisma.language.findMany({ where: { isActive: true }, include: { tutors: { select: { nomAvatar: true, imageUrl: true, genre: true } } } }),
       prisma.lesson.findMany({ where: { isActive: true }, include: { steps: { include: { exercises: true } } } }),
       prisma.dictionaryEntry.findMany({ where: { status: 'PUBLISHED' } }),
       prisma.usefulPhrase.findMany({ where: { status: 'PUBLISHED' } }),
