@@ -132,7 +132,7 @@ model Language {
   usefulPhrases   UsefulPhrase[]
   contributions   Contribution[]
   culturalItems   CulturalItem[]
-  tutor           Tutor?
+  tutors          Tutor[]
 
   @@map("languages")
 }
@@ -316,8 +316,9 @@ model CulturalItem {
 
 model Tutor {
   id                  String   @id @default(uuid())
-  languageId          String   @unique
+  languageId          String
   nomAvatar           String
+  genre               String   @default("M") // M ou F
   imageUrl            String?
   videoUrl            String?
   voixConfig          Json     // config TTS, vitesse, pitch, etc.
