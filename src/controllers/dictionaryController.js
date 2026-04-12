@@ -153,7 +153,9 @@ const generateAudio = async (req, res, next) => {
 
     const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString('base64');
-    const audioUrl = `data:audio/wav;base64,${base64}`;
+    const contentType = response.headers.get('content-type') || 'audio/mp3';
+    const mimeType = contentType.includes('wav') ? 'audio/wav' : 'audio/mp3';
+    const audioUrl = `data:${mimeType};base64,${base64}`;
 
     // Si un entryId est fourni, mettre à jour l'entrée
     if (req.body.entryId) {
