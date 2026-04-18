@@ -63,38 +63,74 @@ const getLesson = async (req, res, next) => {
   }
 };
 
+/**
+ * Vérifie la réponse d'un exercice selon son type.
+ * Supporte : VOCABULARY, TRANSLATION, GRAMMAR, LISTENING (QCM classique)
+ * et IMAGE_WORD, GAME (comparaison flexible).
+ */
+function checkAnswer(exercise, userReponse) {
+  const solution = exercise.solution;
+  if (!solution) return false;
+
+  // Normaliser les chaînes pour la comparaison
+  const normalize = (s) => (s || '').toString().trim().toLowerCase();
+
+  // QCM classique : comparer la réponse textuelle
+  if (solution.reponse !== undefined) {
+    return normalize(userReponse) === normalize(solution.reponse);
+  }
+
+  // Réponse multiple (ex: ordonner des mots)
+  if (Array.isArray(solution) && Array.isArray(userReponse)) {
+    if (solution.length !== userReponse.length) return false;
+    return solution.every((val, i) => normalize(val) === normalize(userReponse[i]));
+  }
+
+  // Fallback : comparaison JSON
+  return JSON.stringify(userReponse) === JSON.stringify(solution);
+}
+
 const submitExercise = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { reponse } = req.body;
 
-    const exercise = await prisma.exercise.findUnique({ where: { id } });
+    const exercise = await prisma.exercise.findUnique({
+      where: { id },
+      include: { step: { select: { lessonId: true } } },
+    });
     if (!exercise) return res.status(404).json({ error: 'Exercice non trouvé' });
 
-    // Vérification basique de la réponse (à adapter selon le type d'exercice)
-    const isCorrect = JSON.stringify(reponse) === JSON.stringify(exercise.solution);
+    const isCorrect = checkAnswer(exercise, reponse);
 
     let pointsGagnes = 0;
     if (isCorrect) {
       pointsGagnes = exercise.pointsXp;
-      // Mettre à jour la progression de la leçon si toutes les étapes sont complétées
-      const step = await prisma.lessonStep.findUnique({
-        where: { id: exercise.stepId },
-        select: { lessonId: true },
+    }
+
+    // Toujours enregistrer la tentative
+    if (exercise.step) {
+      await prisma.userProgress.upsert({
+        where: { userId_lessonId: { userId: req.user.id, lessonId: exercise.step.lessonId } },
+        create: {
+          userId: req.user.id,
+          lessonId: exercise.step.lessonId,
+          statut: 'in_progress',
+          score: pointsGagnes,
+          attempts: 1,
+        },
+        update: {
+          statut: 'in_progress',
+          score: { increment: pointsGagnes },
+          attempts: { increment: 1 },
+        },
       });
-      if (step) {
-        await prisma.userProgress.upsert({
-          where: { userId_lessonId: { userId: req.user.id, lessonId: step.lessonId } },
-          create: { userId: req.user.id, lessonId: step.lessonId, statut: 'in_progress', score: pointsGagnes, attempts: 1 },
-          update: { statut: 'in_progress', score: { increment: pointsGagnes }, attempts: { increment: 1 } },
-        });
-      }
     }
 
     res.json({
       correct: isCorrect,
       pointsGagnes,
-      explication: !isCorrect ? exercise.explication : null,
+      explication: exercise.explication || null,
       solution: !isCorrect ? exercise.solution : null,
     });
   } catch (err) {
@@ -127,4 +163,73 @@ const deleteLesson = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getLessonsByLanguage, getLesson, submitExercise, createLesson, updateLesson, deleteLesson };
+// ==================== STEPS ====================
+
+const createStep = async (req, res, next) => {
+  try {
+    const { lessonId } = req.params;
+    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
+    if (!lesson) return res.status(404).json({ error: 'Leçon non trouvée' });
+
+    const step = await prisma.lessonStep.create({
+      data: { lessonId, ...req.body },
+    });
+    res.status(201).json(step);
+  } catch (err) { next(err); }
+};
+
+const updateStep = async (req, res, next) => {
+  try {
+    const step = await prisma.lessonStep.update({
+      where: { id: req.params.stepId },
+      data: req.body,
+    });
+    res.json(step);
+  } catch (err) { next(err); }
+};
+
+const deleteStep = async (req, res, next) => {
+  try {
+    await prisma.lessonStep.delete({ where: { id: req.params.stepId } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+// ==================== EXERCISES ====================
+
+const createExercise = async (req, res, next) => {
+  try {
+    const { stepId } = req.params;
+    const step = await prisma.lessonStep.findUnique({ where: { id: stepId } });
+    if (!step) return res.status(404).json({ error: 'Étape non trouvée' });
+
+    const exercise = await prisma.exercise.create({
+      data: { stepId, ...req.body },
+    });
+    res.status(201).json(exercise);
+  } catch (err) { next(err); }
+};
+
+const updateExercise = async (req, res, next) => {
+  try {
+    const exercise = await prisma.exercise.update({
+      where: { id: req.params.exerciseId },
+      data: req.body,
+    });
+    res.json(exercise);
+  } catch (err) { next(err); }
+};
+
+const deleteExercise = async (req, res, next) => {
+  try {
+    await prisma.exercise.delete({ where: { id: req.params.exerciseId } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+module.exports = {
+  getLessonsByLanguage, getLesson, submitExercise,
+  createLesson, updateLesson, deleteLesson,
+  createStep, updateStep, deleteStep,
+  createExercise, updateExercise, deleteExercise,
+};

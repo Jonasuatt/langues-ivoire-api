@@ -15,7 +15,11 @@ const tutorRoutes = require('./routes/tutors');
 const progressRoutes = require('./routes/progress');
 const adminRoutes = require('./routes/admin');
 const syncRoutes = require('./routes/sync');
+const notificationRoutes = require('./routes/notifications');
 const analyticsRoutes = require('./routes/analytics');
+const uploadRoutes = require('./routes/upload');
+const videoRoutes = require('./routes/videos');
+const audioContribRoutes = require('./routes/audioContributions');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -57,7 +61,11 @@ app.use('/api/tutors', tutorRoutes);
 app.use('/api/users', progressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/audio-contributions', audioContribRoutes);
 
 // Santé
 app.get('/health', (req, res) => {
