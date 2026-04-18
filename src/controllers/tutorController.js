@@ -28,7 +28,7 @@ const getTutor = async (req, res, next) => {
 
 const chatWithTutor = async (req, res, next) => {
   try {
-    const { message, categorie } = req.body;
+    const { message, categorie, conversationHistory } = req.body;
     const tutor = await prisma.tutor.findUnique({
       where: { id: req.params.id },
       include: { language: { select: { nom: true, code: true } } },
@@ -41,25 +41,25 @@ const chatWithTutor = async (req, res, next) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tutorId: tutor.id,
-        languageCode: tutor.language.code,
+        tutorId:             tutor.id,
+        languageCode:        tutor.language.code,
         message,
-        categorie,
-        userId: req.user.id,
-        personalite: tutor.personalite,
+        categorie:           categorie || null,
+        userId:              req.user.id,
+        personalite:         tutor.personalite || null,
+        conversationHistory: conversationHistory || [],
       }),
+      signal: AbortSignal.timeout(20_000),
     });
 
-    if (!response.ok) {
-      throw new Error('Service IA indisponible');
-    }
+    if (!response.ok) throw new Error('Service IA indisponible');
 
     const aiResponse = await response.json();
-    res.json({ reply: aiResponse.reply, audioUrl: aiResponse.audioUrl });
+    res.json({ reply: aiResponse.reply, audioUrl: aiResponse.audioUrl || null });
   } catch (err) {
-    // Réponse de fallback si le service IA est indisponible
+    // Fallback si le service IA est indisponible
     res.json({
-      reply: "Je suis temporairement indisponible. Réessayez dans quelques instants.",
+      reply: "Je suis momentanément indisponible. Réessayez dans quelques instants. 🙏",
       audioUrl: null,
     });
   }
