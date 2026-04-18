@@ -13,6 +13,9 @@ const getDashboard = async (req, res, next) => {
       totalLessonsCompleted, totalContributions,
       pendingContributions, totalWords, totalPhrases,
       totalBadgesEarned, totalLessons, totalCultural,
+      totalAudioContribs, validatedAudioContribs,
+      totalPracticeSessions, totalVideos,
+      languagesWithContent,
     ] = await Promise.all([
       prisma.user.count({ where: { isActive: true } }),
       prisma.user.count({ where: { lastActiveAt: { gte: day1 } } }),
@@ -26,12 +29,25 @@ const getDashboard = async (req, res, next) => {
       prisma.userBadge.count(),
       prisma.lesson.count({ where: { isActive: true } }),
       prisma.culturalItem.count({ where: { isActive: true } }),
+      // Contributions vocales (IA)
+      prisma.audioContribution.count({ where: { isActive: true } }).catch(() => 0),
+      prisma.audioContribution.count({ where: { isActive: true, isValidated: true } }).catch(() => 0),
+      // Sessions de pratique IA
+      prisma.practiceSession.count().catch(() => 0),
+      // Vidéos
+      prisma.video.count({ where: { isActive: true } }).catch(() => 0),
+      // Langues avec au moins une leçon active
+      prisma.language.count({ where: { isActive: true, lessons: { some: { isActive: true } } } }).catch(() => 0),
     ]);
 
     res.json({
       users: { total: totalUsers, activeD1, activeD7, activeD30 },
-      content: { totalWords, totalPhrases, totalLessonsCompleted, totalLessons, totalCultural },
+      content: {
+        totalWords, totalPhrases, totalLessonsCompleted, totalLessons,
+        totalCultural, totalVideos, languagesWithContent,
+      },
       contributions: { total: totalContributions, pending: pendingContributions },
+      ia: { audioContributions: totalAudioContribs, validatedAudio: validatedAudioContribs, practiceSessions: totalPracticeSessions },
       gamification: { totalBadgesEarned },
       retentionD1: totalUsers > 0 ? ((activeD1 / totalUsers) * 100).toFixed(1) : 0,
       retentionD7: totalUsers > 0 ? ((activeD7 / totalUsers) * 100).toFixed(1) : 0,
