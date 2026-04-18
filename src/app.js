@@ -18,6 +18,9 @@ const syncRoutes = require('./routes/sync');
 const notificationRoutes = require('./routes/notifications');
 const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
+const videoRoutes = require('./routes/videos');
+const audioContribRoutes = require('./routes/audioContributions');
+const searchRoutes = require('./routes/search');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -62,6 +65,9 @@ app.use('/api/sync', syncRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/audio-contributions', audioContribRoutes);
+app.use('/api/search', searchRoutes);
 
 // Santé
 app.get('/health', (req, res) => {
