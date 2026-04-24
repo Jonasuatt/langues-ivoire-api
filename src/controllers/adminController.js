@@ -39,6 +39,21 @@ const getUsers = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const { role, isPremium, premiumUntil, isActive } = req.body;
+    const requestingRole = req.user.role;
+
+    // Charger le compte cible pour vérifier son rôle actuel
+    const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { role: true } });
+    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    // Un ADMIN ne peut pas modifier un SUPER_ADMIN
+    if (requestingRole === 'ADMIN' && target.role === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé : vous ne pouvez pas modifier un Super-Administrateur' });
+    }
+    // Un ADMIN ne peut pas attribuer le rôle SUPER_ADMIN
+    if (requestingRole === 'ADMIN' && role === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé : seul un Super-Administrateur peut attribuer ce rôle' });
+    }
+
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: { role, isPremium, premiumUntil, isActive },

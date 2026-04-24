@@ -14,6 +14,7 @@ enum Role {
   CONTRIBUTOR
   EDITOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum ContentStatus {
@@ -79,6 +80,7 @@ model User {
   isPremium           Boolean   @default(false)
   premiumUntil        DateTime?
   pointsContribution  Int       @default(0)
+  bonusXp             Int       @default(0)   // XP hors-leçons (jeux, S.O.S., marché…)
   streak              Int       @default(0)
   lastActiveAt        DateTime?
   isActive            Boolean   @default(true)
@@ -104,6 +106,8 @@ model User {
   pronunciationReqs   PronunciationRequest[]
   notifications       Notification[]
   organizationMember  OrganizationMember[]
+  audioContributions  AudioContribution[]
+  practiceSessions    PracticeSession[]
 
   @@map("users")
 }
@@ -133,6 +137,9 @@ model Language {
   contributions   Contribution[]
   culturalItems   CulturalItem[]
   tutors          Tutor[]
+  videos          Video[]
+  audioContribs   AudioContribution[]
+  practiceSessions PracticeSession[]
 
   @@map("languages")
 }
@@ -434,6 +441,30 @@ model OrganizationMember {
   @@map("organization_members")
 }
 
+// ==================== VIDÉOS ====================
+
+model Video {
+  id            String        @id @default(uuid())
+  languageId    String?
+  titre         String
+  description   String?
+  url           String        // URL YouTube ou Cloudinary
+  thumbnailUrl  String?
+  duree         Int?          // durée en secondes
+  categorie     String        @default("culturel") // prononciation, culturel, tutoriel, musique, documentaire
+  source        String        @default("youtube") // youtube, cloudinary, externe
+  ordre         Int           @default(0)
+  isActive      Boolean       @default(true)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  language      Language?     @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, categorie])
+  @@map("videos")
+}
+
 // ==================== NOTIFICATIONS ====================
 
 model Notification {
@@ -450,4 +481,55 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id])
 
   @@map("notifications")
+}
+
+// ==================== CONTRIBUTIONS AUDIO (IA LINGUISTIQUE) ====================
+
+model AudioContribution {
+  id            String    @id @default(uuid())
+  userId        String
+  languageId    String
+  mot           String                      // mot ou phrase en langue locale
+  traduction    String?                     // traduction française
+  audioUrl      String                      // URL de l'enregistrement audio
+  transcription String?                     // notation phonétique
+  categorie     String?                     // salutations, famille, marché...
+  duree         Int?                        // durée en millisecondes
+  isValidated   Boolean   @default(false)   // validé par un éditeur
+  validatedBy   String?
+  validatedAt   DateTime?
+  qualityScore  Float?                      // score qualité 0-5
+  timesPlayed   Int       @default(0)       // nombre de fois joué par l'IA
+  isActive      Boolean   @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id])
+  language      Language  @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, isValidated])
+  @@index([mot, languageId])
+  @@map("audio_contributions")
+}
+
+// ==================== SESSIONS DE PRATIQUE ====================
+
+model PracticeSession {
+  id            String    @id @default(uuid())
+  userId        String
+  languageId    String
+  tutorId       String?
+  mode          String    @default("listen_repeat") // listen_repeat, free_speak, quiz
+  wordsCount    Int       @default(0)               // nombre de mots pratiqués
+  correctCount  Int       @default(0)               // nombre de bonnes réponses
+  duration      Int?                                // durée en secondes
+  audioRecordings Json?                             // tableau d'URLs des enregistrements
+
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id])
+  language      Language  @relation(fields: [languageId], references: [id])
+
+  @@map("practice_sessions")
 }
