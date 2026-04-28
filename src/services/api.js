@@ -87,6 +87,9 @@ export const uploadAPI = {
 export const audioContribAPI = {
   getAll: (params) => api.get('/audio-contributions', { params }),
   getStats: () => api.get('/audio-contributions/stats'),
+  create: (formData) => api.post('/audio-contributions', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  bulkImport: (formData) => api.post('/audio-contributions/bulk-import', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, data) => api.patch(`/audio-contributions/${id}`, data),
   validate: (id, data) => api.patch(`/audio-contributions/${id}/validate`, data),
   delete: (id) => api.delete(`/audio-contributions/${id}`),
 };

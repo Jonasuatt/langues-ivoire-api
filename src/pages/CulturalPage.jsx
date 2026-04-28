@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { culturalAPI, languagesAPI } from '../services/api';
 import api from '../services/api';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const TYPES = ['PROVERB','TRADITION','ANECDOTE','TALE','MUSIC','DANCE'];
@@ -75,14 +75,23 @@ export default function CulturalPage() {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contenu Culturel</h1>
-          <p className="text-gray-500 text-sm mt-1">{items.length} éléments</p>
+          <h1 className="text-2xl font-bold text-gray-900">Culture & Traditions</h1>
+          <p className="text-gray-500 text-sm mt-1">{items.length} élément(s) culturel(s)</p>
         </div>
         <button className="btn-primary flex items-center gap-2" onClick={openAdd}>
-          <PlusIcon className="w-4 h-4" /> Ajouter
+          <PlusIcon className="w-4 h-4" /> Ajouter un élément
         </button>
+      </div>
+
+      {/* Aide contextuelle */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 flex gap-3">
+        <InformationCircleIcon className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-blue-800">
+          <p className="font-semibold mb-1">💡 Comment ça marche ?</p>
+          <p>Chaque jour, l'application mobile affiche automatiquement <strong>un élément culturel différent</strong> aux utilisateurs (le "Point culturel du jour"). Plus vous ajoutez d'éléments, plus le contenu est varié. Les proverbes, traditions et contes sont particulièrement appréciés.</p>
+        </div>
       </div>
 
       {/* Filtres */}
@@ -176,14 +185,29 @@ export default function CulturalPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contenu *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Contenu en langue locale *
+                  </label>
+                  <span className={`text-xs font-medium ${form.contenu.length > 280 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {form.contenu.length}/280 caractères
+                  </span>
+                </div>
                 <textarea className="input h-24 resize-none" value={form.contenu} required
                   onChange={e => setForm({...form, contenu: e.target.value})}
-                  placeholder="Proverbe, tradition, anecdote..." />
+                  placeholder="Ex: Ɔbaa na ɔwɔ ho a, ɛyɛ ofi (Baoulé — le proverbe dans la langue locale)" />
+                {form.contenu.length > 280 && (
+                  <p className="text-xs text-red-500 mt-1">⚠️ Texte trop long pour l'affichage mobile (max. 280 caractères recommandés)</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Traduction (français)</label>
-                <input className="input" value={form.traduction} onChange={e => setForm({...form, traduction: e.target.value})} />
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Traduction en français
+                </label>
+                <input className="input" value={form.traduction}
+                  onChange={e => setForm({...form, traduction: e.target.value})}
+                  placeholder="Ex: La femme présente est le foyer de la maison" />
+                <p className="text-xs text-gray-400 mt-1">La traduction aide les apprenants à comprendre le sens</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">

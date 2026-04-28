@@ -46,9 +46,14 @@ export default function LessonsPage() {
     setSelectedLangId(lang.id);
   };
 
+  const [modalLangId, setModalLangId] = useState('');
+  const [modalLangCode, setModalLangCode] = useState('');
+
   const openAdd = () => {
     setEditLesson(null);
     setForm(EMPTY_FORM);
+    setModalLangId(selectedLangId);
+    setModalLangCode(selectedLang);
     setShowModal(true);
   };
 
@@ -73,7 +78,7 @@ export default function LessonsPage() {
         await lessonsAPI.update(editLesson.id, form);
         toast.success('Leçon mise à jour !');
       } else {
-        await lessonsAPI.create({ ...form, languageId: selectedLangId, langueCode: selectedLang, isActive: true });
+        await lessonsAPI.create({ ...form, languageId: modalLangId, langueCode: modalLangCode, isActive: true });
         toast.success('Leçon créée !');
       }
       setShowModal(false);
@@ -183,9 +188,26 @@ export default function LessonsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-5">
-              {editLesson ? 'Modifier la leçon' : `Nouvelle leçon — ${selectedLang.toUpperCase()}`}
+              {editLesson ? 'Modifier la leçon' : 'Nouvelle leçon'}
             </h2>
             <div className="space-y-4">
+              {!editLesson && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Langue *</label>
+                  <select
+                    className="input"
+                    value={modalLangId}
+                    onChange={e => {
+                      const lang = languages.find(l => l.id === e.target.value);
+                      setModalLangId(e.target.value);
+                      setModalLangCode(lang?.code || '');
+                    }}>
+                    {languages.map(l => (
+                      <option key={l.id} value={l.id}>{l.nom}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
                 <input className="input" value={form.titre} onChange={e => setForm({...form, titre: e.target.value})} placeholder="Ex: Les Salutations en Baoulé" />
