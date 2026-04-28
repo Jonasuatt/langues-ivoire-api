@@ -50,8 +50,9 @@ const NAV_SECTIONS = [
   {
     title: 'Intelligence Artificielle',
     items: [
-      { to: '/tutors', label: 'Tuteurs IA', icon: UserGroupIcon },
-      { to: '/agents-test', label: 'Test Agents IA', icon: SparklesIcon },
+      { to: '/tutors',           label: 'Tuteurs IA',       icon: UserGroupIcon },
+      { to: '/agents-test',      label: 'Test Agents IA',   icon: SparklesIcon },
+      { to: '/welcome-settings', label: 'Bienvenue & Sons', icon: MusicalNoteIcon },
     ],
   },
   {
