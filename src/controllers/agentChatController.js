@@ -134,23 +134,36 @@ Règles importantes :
 - Ne réponds qu'aux questions liées aux langues et à la culture de Côte d'Ivoire.
 - Si la question n'a rien à voir avec la langue ou la culture ivoirienne, dis poliment que tu ne peux pas aider sur ce sujet.`;
 
-    const aiResponse = await anthropic.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 180,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: message.trim() }],
-    });
+    try {
+      const aiResponse = await anthropic.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 180,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: message.trim() }],
+      });
 
-    const responseText = aiResponse.content[0]?.text || 'Je n\'ai pas pu répondre à cette question.';
+      const responseText = aiResponse.content[0]?.text || 'Je n\'ai pas pu répondre à cette question.';
 
-    return res.json({
-      source: 'ai',
-      response: responseText,
-      mot: null,
-      audioUrl: null,
-      transcription: null,
-      estVoixOfficielle: false,
-    });
+      return res.json({
+        source: 'ai',
+        response: responseText,
+        mot: null,
+        audioUrl: null,
+        transcription: null,
+        estVoixOfficielle: false,
+      });
+    } catch (aiErr) {
+      // Claude API indisponible (crédits insuffisants, quota, etc.) → réponse de repli gracieuse
+      console.error('[AgentChat] Claude API error:', aiErr?.message || aiErr);
+      return res.json({
+        source: 'unavailable',
+        response: `Je ne trouve pas encore "${message.trim()}" dans ma base de données ${language.nom}. Enrichissez la base via le CMS ou revenez bientôt !`,
+        mot: null,
+        audioUrl: null,
+        transcription: null,
+        estVoixOfficielle: false,
+      });
+    }
 
   } catch (err) {
     next(err);
