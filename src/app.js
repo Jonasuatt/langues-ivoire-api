@@ -20,6 +20,8 @@ const analyticsRoutes = require('./routes/analytics');
 const uploadRoutes = require('./routes/upload');
 const videoRoutes = require('./routes/videos');
 const audioContribRoutes = require('./routes/audioContributions');
+const searchRoutes = require('./routes/search');
+const agentChatRoutes = require('./routes/agentChat');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -66,6 +68,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/audio-contributions', audioContribRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/agent-chat', agentChatRoutes);
 
 // Santé
 app.get('/health', (req, res) => {

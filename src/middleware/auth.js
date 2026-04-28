@@ -22,14 +22,21 @@ const authenticate = async (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (!req.user || !['ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Accès refusé : rôle administrateur requis' });
   }
   next();
 };
 
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Accès refusé : rôle super-administrateur requis' });
+  }
+  next();
+};
+
 const requireEditor = (req, res, next) => {
-  if (!req.user || !['ADMIN', 'EDITOR'].includes(req.user.role)) {
+  if (!req.user || !['ADMIN', 'SUPER_ADMIN', 'EDITOR'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Accès refusé : rôle éditeur requis' });
   }
   next();
@@ -51,4 +58,4 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireAdmin, requireEditor, optionalAuth };
+module.exports = { authenticate, requireAdmin, requireSuperAdmin, requireEditor, optionalAuth };

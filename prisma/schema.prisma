@@ -14,6 +14,7 @@ enum Role {
   CONTRIBUTOR
   EDITOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum ContentStatus {
@@ -79,6 +80,7 @@ model User {
   isPremium           Boolean   @default(false)
   premiumUntil        DateTime?
   pointsContribution  Int       @default(0)
+  bonusXp             Int       @default(0)   // XP hors-leçons (jeux, S.O.S., marché…)
   streak              Int       @default(0)
   lastActiveAt        DateTime?
   isActive            Boolean   @default(true)
@@ -499,6 +501,10 @@ model AudioContribution {
   qualityScore  Float?                      // score qualité 0-5
   timesPlayed   Int       @default(0)       // nombre de fois joué par l'IA
   isActive      Boolean   @default(true)
+
+  // Voix officielles par langue — homme/femme engagé professionnellement
+  estVoixOfficielle Boolean @default(false)  // enregistrement d'un locuteur officiel
+  genreVoix         String?                  // "F" (féminin) ou "M" (masculin)
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
