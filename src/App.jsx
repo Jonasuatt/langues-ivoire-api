@@ -14,6 +14,7 @@ import UsersPage from './pages/UsersPage';
 import AudioUploadPage from './pages/AudioUploadPage';
 import VideosPage from './pages/VideosPage';
 import AudioContributionsPage from './pages/AudioContributionsPage';
+import AgentsTestPage from './pages/AgentsTestPage';
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="audio-upload" element={<AudioUploadPage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="audio-contributions" element={<AudioContributionsPage />} />
+          <Route path="agents-test" element={<AgentsTestPage />} />
           <Route path="users" element={<ProtectedRoute roles={['ADMIN', 'SUPER_ADMIN']}><UsersPage /></ProtectedRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

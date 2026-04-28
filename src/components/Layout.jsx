@@ -2,9 +2,10 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   HomeIcon, BookOpenIcon, ChatBubbleLeftRightIcon, AcademicCapIcon,
-  UserGroupIcon, SparklesIcon, UsersIcon, ArrowRightOnRectangleIcon,
+  UserGroupIcon, UsersIcon, ArrowRightOnRectangleIcon,
   MusicalNoteIcon, VideoCameraIcon, MicrophoneIcon, ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
+import { SparklesIcon } from '@heroicons/react/24/solid';
 
 // Labels en français pour chaque rôle
 export const ROLE_LABELS = {
@@ -50,6 +51,7 @@ const NAV_SECTIONS = [
     title: 'Intelligence Artificielle',
     items: [
       { to: '/tutors', label: 'Tuteurs IA', icon: UserGroupIcon },
+      { to: '/agents-test', label: 'Test Agents IA', icon: SparklesIcon },
     ],
   },
   {

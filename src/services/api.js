@@ -107,4 +107,8 @@ export const adminAPI = {
   updateUser: (id, data) => api.patch(`/admin/users/${id}`, data),
 };
 
+export const agentChatAPI = {
+  ask: (data) => api.post('/agent-chat', data, { timeout: 20000 }),
+};
+
 export default api;
