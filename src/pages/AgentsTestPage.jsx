@@ -1,10 +1,40 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { languagesAPI, agentChatAPI } from '../services/api';
 import {
-  PaperAirplaneIcon, SpeakerWaveIcon, TrashIcon,
+  PaperAirplaneIcon, SpeakerWaveIcon, SpeakerXMarkIcon, TrashIcon,
   CpuChipIcon, BookOpenIcon, MicrophoneIcon, ExclamationTriangleIcon,
+  StopCircleIcon,
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
+
+// ── Web Speech API — TTS navigateur ─────────────────────────────────────────
+const AGENT_VOICES = {
+  F: { pitch: 1.25, rate: 0.88, lang: 'fr-FR' },
+  M: { pitch: 0.82, rate: 1.0,  lang: 'fr-FR' },
+};
+
+function speakText(text, gender = 'F', onEnd = null) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  const cfg = AGENT_VOICES[gender] || AGENT_VOICES.F;
+  utter.lang  = cfg.lang;
+  utter.pitch = cfg.pitch;
+  utter.rate  = cfg.rate;
+
+  // Préférer une voix française si disponible
+  const voices = window.speechSynthesis.getVoices();
+  const frVoice = voices.find(v => v.lang.startsWith('fr') && (gender === 'F' ? !v.name.includes('Male') : true));
+  if (frVoice) utter.voice = frVoice;
+
+  if (onEnd) utter.onend = onEnd;
+  window.speechSynthesis.speak(utter);
+}
+
+function stopSpeech() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
 
 // ── Agents disponibles ───────────────────────────────────────────────────────
 const AGENTS = [
@@ -63,7 +93,7 @@ function SourceBadge({ source }) {
 }
 
 // ── Bulle de message ─────────────────────────────────────────────────────────
-function MessageBubble({ msg, agent, onPlay }) {
+function MessageBubble({ msg, agent, onPlayAudio, onSpeak, isSpeaking }) {
   const isUser = msg.role === 'user';
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
@@ -81,15 +111,22 @@ function MessageBubble({ msg, agent, onPlay }) {
           {msg.text}
         </div>
         {!isUser && msg.source && (
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-2 px-1 flex-wrap">
             <SourceBadge source={msg.source} />
+            {/* Bouton lecture audio humain */}
             {msg.audioUrl && (
-              <button onClick={() => onPlay(msg.audioUrl)}
-                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
-                <SpeakerWaveIcon className="w-3.5 h-3.5" />
-                Écouter
+              <button onClick={() => onPlayAudio(msg.audioUrl)}
+                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium transition-colors">
+                <MicrophoneIcon className="w-3.5 h-3.5" />
+                Audio original
               </button>
             )}
+            {/* Bouton TTS navigateur */}
+            <button onClick={() => onSpeak(msg.text)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors">
+              <SpeakerWaveIcon className="w-3.5 h-3.5" />
+              Écouter
+            </button>
             {msg.mot && (
               <span className="text-xs text-gray-400">· {msg.mot}</span>
             )}
@@ -108,6 +145,8 @@ export default function AgentsTestPage() {
   const [chatHistory, setChatHistory] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);   // lecture auto activée par défaut
   const [stats, setStats] = useState({ database: 0, dictionary: 0, ai: 0, unavailable: 0 });
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -121,21 +160,42 @@ export default function AgentsTestPage() {
     }).catch(() => {});
   }, []);
 
+  // Charger les voix TTS dès que possible (navigateur lazy-load)
+  useEffect(() => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+    return () => stopSpeech();
+  }, []);
+
   // Scroll auto
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
   }, [chatHistory]);
 
-  // Jouer un audio
-  const playAudio = (url) => {
+  // Jouer un audio (enregistrement humain)
+  const playAudio = useCallback((url) => {
+    stopSpeech();
     try { new Audio(url).play(); } catch (_) {}
-  };
+  }, []);
+
+  // Lecture TTS d'un texte avec la voix de l'agent actif
+  const handleSpeak = useCallback((text) => {
+    setIsSpeaking(true);
+    speakText(text, selectedAgent.gender, () => setIsSpeaking(false));
+  }, [selectedAgent.gender]);
+
+  // Arrêter la lecture
+  const handleStop = () => { stopSpeech(); setIsSpeaking(false); };
 
   // Envoyer un message
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || !selectedLang || loading) return;
 
+    stopSpeech();
+    setIsSpeaking(false);
     setChatHistory(h => [...h, { role: 'user', text }]);
     setInput('');
     setLoading(true);
@@ -148,19 +208,28 @@ export default function AgentsTestPage() {
         agentGender: selectedAgent.gender,
       });
 
-      setChatHistory(h => [...h, {
+      const agentMsg = {
         role: 'agent',
         text: data.response,
         source: data.source,
         audioUrl: data.audioUrl,
         mot: data.mot,
         traduction: data.traduction,
-      }]);
-
+      };
+      setChatHistory(h => [...h, agentMsg]);
       setStats(s => ({ ...s, [data.source]: (s[data.source] || 0) + 1 }));
 
-      // Lire la réponse à voix haute si audio disponible
-      if (data.audioUrl) playAudio(data.audioUrl);
+      // Lecture automatique de la réponse
+      if (autoSpeak) {
+        if (data.audioUrl) {
+          // Audio humain prioritaire
+          playAudio(data.audioUrl);
+        } else {
+          // TTS navigateur
+          setIsSpeaking(true);
+          speakText(data.response, selectedAgent.gender, () => setIsSpeaking(false));
+        }
+      }
 
     } catch {
       setChatHistory(h => [...h, {
@@ -175,6 +244,8 @@ export default function AgentsTestPage() {
   };
 
   const clearChat = () => {
+    stopSpeech();
+    setIsSpeaking(false);
     setChatHistory([]);
     setStats({ database: 0, dictionary: 0, ai: 0, unavailable: 0 });
   };
@@ -195,13 +266,36 @@ export default function AgentsTestPage() {
               Dialoguez avec Zélé ou Kouadio pour tester les réponses avant la mise en ligne
             </p>
           </div>
-          {totalMessages > 0 && (
-            <button onClick={clearChat}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
-              <TrashIcon className="w-4 h-4" />
-              Effacer
+          <div className="flex items-center gap-2">
+            {/* Bouton stop lecture */}
+            {isSpeaking && (
+              <button onClick={handleStop}
+                className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors animate-pulse">
+                <StopCircleIcon className="w-4 h-4" />
+                Stop
+              </button>
+            )}
+            {/* Bouton muet / son */}
+            <button onClick={() => { setAutoSpeak(v => !v); if (isSpeaking) handleStop(); }}
+              title={autoSpeak ? 'Désactiver la lecture automatique' : 'Activer la lecture automatique'}
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                autoSpeak
+                  ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}>
+              {autoSpeak
+                ? <SpeakerWaveIcon className="w-4 h-4" />
+                : <SpeakerXMarkIcon className="w-4 h-4" />}
+              {autoSpeak ? 'Son activé' : 'Muet'}
             </button>
-          )}
+            {totalMessages > 0 && (
+              <button onClick={clearChat}
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                <TrashIcon className="w-4 h-4" />
+                Effacer
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -358,7 +452,8 @@ export default function AgentsTestPage() {
               </div>
             ) : (
               chatHistory.map((msg, i) => (
-                <MessageBubble key={i} msg={msg} agent={selectedAgent} onPlay={playAudio} />
+                <MessageBubble key={i} msg={msg} agent={selectedAgent}
+                  onPlayAudio={playAudio} onSpeak={handleSpeak} isSpeaking={isSpeaking} />
               ))
             )}
             {loading && (
