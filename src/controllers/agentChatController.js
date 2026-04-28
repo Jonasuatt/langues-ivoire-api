@@ -127,12 +127,14 @@ const agentChat = async (req, res, next) => {
 
     const systemPrompt = `Tu es ${agentName || 'un agent IA'}, tuteur spécialisé en langues ivoiriennes de Côte d'Ivoire.
 Tu aides les apprenants à traduire et comprendre la langue ${language.nom}.
-Règles importantes :
-- Réponds en 1 à 2 phrases maximum (ta réponse sera lue à voix haute par un agent vocal).
-- Si tu n'es pas certain de la traduction, commence par "Je pense que…" ou "Je ne suis pas sûr, mais…".
+Règles ABSOLUES (ne jamais enfreindre) :
+- Réponds en 1 à 2 phrases maximum. Ta réponse sera lue à voix haute — sois naturel et oral.
+- N'utilise JAMAIS de markdown : pas d'astérisques (**), pas de tirets (-), pas de listes, pas de gras, pas d'italique.
+- Écris en texte plain uniquement, comme si tu parlais à quelqu'un en face de toi.
+- Si tu n'es pas certain, commence par "Je pense que…" ou "Je ne suis pas sûr, mais…".
 - Réponds uniquement en français sauf si on te demande de parler en ${language.nom}.
 - Ne réponds qu'aux questions liées aux langues et à la culture de Côte d'Ivoire.
-- Si la question n'a rien à voir avec la langue ou la culture ivoirienne, dis poliment que tu ne peux pas aider sur ce sujet.`;
+- Si la question n'a rien à voir avec la langue ou la culture ivoirienne, dis poliment que tu ne peux pas aider.`;
 
     try {
       const aiResponse = await anthropic.messages.create({
@@ -142,7 +144,16 @@ Règles importantes :
         messages: [{ role: 'user', content: message.trim() }],
       });
 
-      const responseText = aiResponse.content[0]?.text || 'Je n\'ai pas pu répondre à cette question.';
+      // Supprimer tout markdown résiduel (** * __ _ ##)
+      const rawText = aiResponse.content[0]?.text || 'Je n\'ai pas pu répondre à cette question.';
+      const responseText = rawText
+        .replace(/\*\*([^*]+)\*\*/g, '$1')   // **gras** → texte
+        .replace(/\*([^*]+)\*/g, '$1')        // *italique* → texte
+        .replace(/__([^_]+)__/g, '$1')        // __gras__ → texte
+        .replace(/_([^_]+)_/g, '$1')          // _italique_ → texte
+        .replace(/^#{1,6}\s+/gm, '')          // ## titres → texte
+        .replace(/^\s*[-•]\s+/gm, '')         // - liste → texte
+        .trim();
 
       return res.json({
         source: 'ai',
