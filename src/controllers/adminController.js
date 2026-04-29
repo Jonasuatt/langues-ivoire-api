@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -77,4 +78,38 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-module.exports = { getUsers, updateUser, deleteUser };
+/**
+ * Créer un compte membre directement depuis le CMS (sans passer par l'app mobile)
+ * POST /api/admin/users/create
+ */
+const createMember = async (req, res, next) => {
+  try {
+    const { nom, prenom, email, motDePasse, role = 'CONTRIBUTOR' } = req.body;
+
+    if (!nom || !prenom || !email || !motDePasse) {
+      return res.status(400).json({ error: 'Champs obligatoires : nom, prenom, email, motDePasse' });
+    }
+
+    // Un ADMIN ne peut pas créer un SUPER_ADMIN
+    if (role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Seul un Super-Administrateur peut créer un compte Super-Admin' });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
+    }
+
+    const motDePasseHash = await bcrypt.hash(motDePasse, 12);
+    const user = await prisma.user.create({
+      data: { nom, prenom, email, motDePasseHash, role, isActive: true },
+      select: { id: true, nom: true, prenom: true, email: true, role: true, createdAt: true },
+    });
+
+    res.status(201).json(user);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getUsers, updateUser, deleteUser, createMember };

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { authenticate, requireAdmin } = require('../middleware/auth');
-const { getUsers, updateUser, deleteUser } = require('../controllers/adminController');
+const { getUsers, updateUser, deleteUser, createMember } = require('../controllers/adminController');
 const { getBadges, getBadge, createBadge, updateBadge, deleteBadge } = require('../controllers/badgeController');
 const { sendNotification, getNotificationHistory } = require('../controllers/adminNotificationController');
 const { getPhrases, createPhrase, updatePhrase, deletePhrase } = require('../controllers/phrasesAdminController');
@@ -9,6 +9,7 @@ router.use(authenticate, requireAdmin);
 
 // ── Utilisateurs ─────────────────────────────────────────────
 router.get('/users', getUsers);
+router.post('/users/create', createMember);
 router.patch('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
 
