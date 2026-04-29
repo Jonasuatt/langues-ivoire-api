@@ -23,6 +23,7 @@ const audioContribRoutes = require('./routes/audioContributions');
 const searchRoutes = require('./routes/search');
 const agentChatRoutes = require('./routes/agentChat');
 const phrasesRoutes = require('./routes/phrases');
+const badgesRoutes = require('./routes/badges');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api/audio-contributions', audioContribRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/agent-chat', agentChatRoutes);
 app.use('/api/phrases', phrasesRoutes);
+app.use('/api/badges', badgesRoutes);
 
 // Santé
 app.get('/health', (req, res) => {
