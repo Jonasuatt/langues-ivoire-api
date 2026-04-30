@@ -97,4 +97,26 @@ const updateMe = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, refreshToken, getMe, updateMe };
+const changePassword = async (req, res, next) => {
+  try {
+    const { ancienMotDePasse, nouveauMotDePasse } = req.body;
+    if (!ancienMotDePasse || !nouveauMotDePasse) {
+      return res.status(400).json({ error: 'Ancien et nouveau mot de passe requis' });
+    }
+    if (nouveauMotDePasse.length < 8) {
+      return res.status(400).json({ error: 'Le nouveau mot de passe doit faire au moins 8 caractères' });
+    }
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const valid = await bcrypt.compare(ancienMotDePasse, user.motDePasseHash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Ancien mot de passe incorrect' });
+    }
+    const motDePasseHash = await bcrypt.hash(nouveauMotDePasse, 12);
+    await prisma.user.update({ where: { id: req.user.id }, data: { motDePasseHash } });
+    res.json({ message: 'Mot de passe modifié avec succès' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, refreshToken, getMe, updateMe, changePassword };
