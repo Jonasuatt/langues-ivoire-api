@@ -57,6 +57,11 @@ enum CulturalItemType {
 }
 
 enum NotificationType {
+  SYSTEM
+  BADGE
+  STREAK
+  LESSON
+  PROMO
   DAILY_REMINDER
   BADGE_EARNED
   CHALLENGE
