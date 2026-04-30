@@ -1,33 +1,34 @@
 const router = require('express').Router();
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireEditor } = require('../middleware/auth');
 const { getUsers, updateUser, deleteUser, createMember } = require('../controllers/adminController');
 const { getBadges, getBadge, createBadge, updateBadge, deleteBadge } = require('../controllers/badgeController');
 const { sendNotification, getNotificationHistory } = require('../controllers/adminNotificationController');
 const { getPhrases, createPhrase, updatePhrase, deletePhrase } = require('../controllers/phrasesAdminController');
 
-router.use(authenticate, requireAdmin);
+// Toutes les routes nécessitent d'être authentifié
+router.use(authenticate);
 
-// ── Utilisateurs ─────────────────────────────────────────────
-router.get('/users', getUsers);
-router.post('/users/create', createMember);
-router.patch('/users/:id', updateUser);
-router.delete('/users/:id', deleteUser);
+// ── Utilisateurs — ADMIN uniquement ──────────────────────────
+router.get('/users',           requireAdmin, getUsers);
+router.post('/users/create',   requireAdmin, createMember);
+router.patch('/users/:id',     requireAdmin, updateUser);
+router.delete('/users/:id',    requireAdmin, deleteUser);
 
-// ── Badges ───────────────────────────────────────────────────
-router.get('/badges', getBadges);
-router.get('/badges/:id', getBadge);
-router.post('/badges', createBadge);
-router.patch('/badges/:id', updateBadge);
-router.delete('/badges/:id', deleteBadge);
+// ── Badges — EDITOR et plus ───────────────────────────────────
+router.get('/badges',          requireEditor, getBadges);
+router.get('/badges/:id',      requireEditor, getBadge);
+router.post('/badges',         requireEditor, createBadge);
+router.patch('/badges/:id',    requireEditor, updateBadge);
+router.delete('/badges/:id',   requireAdmin,  deleteBadge);  // suppression = admin
 
-// ── Notifications admin ──────────────────────────────────────
-router.post('/notifications/send', sendNotification);
-router.get('/notifications/history', getNotificationHistory);
+// ── Notifications — ADMIN uniquement ─────────────────────────
+router.post('/notifications/send',    requireAdmin, sendNotification);
+router.get('/notifications/history',  requireAdmin, getNotificationHistory);
 
-// ── Phrases utiles / SOS ─────────────────────────────────────
-router.get('/phrases', getPhrases);
-router.post('/phrases', createPhrase);
-router.patch('/phrases/:id', updatePhrase);
-router.delete('/phrases/:id', deletePhrase);
+// ── Phrases utiles / SOS — EDITOR et plus ────────────────────
+router.get('/phrases',         requireEditor, getPhrases);
+router.post('/phrases',        requireEditor, createPhrase);
+router.patch('/phrases/:id',   requireEditor, updatePhrase);
+router.delete('/phrases/:id',  requireAdmin,  deletePhrase);  // suppression = admin
 
 module.exports = router;
