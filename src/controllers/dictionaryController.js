@@ -116,11 +116,18 @@ const contributePhrase = async (req, res, next) => {
 
 const adminCreateWord = async (req, res, next) => {
   try {
-    const { langueCode, mot, traduction, transcription, categorie, exemplePhrase, audioUrl, exempleTraduction } = req.body;
-    const language = await prisma.language.findFirst({ where: { code: langueCode } });
-    if (!language) return res.status(404).json({ error: 'Langue non trouvée' });
+    const { langueCode, languageId, mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, imageUrl } = req.body;
+
+    let resolvedLanguageId = languageId;
+    if (!resolvedLanguageId && langueCode) {
+      const language = await prisma.language.findFirst({ where: { code: langueCode } });
+      if (!language) return res.status(404).json({ error: 'Langue non trouvée' });
+      resolvedLanguageId = language.id;
+    }
+    if (!resolvedLanguageId) return res.status(400).json({ error: 'languageId ou langueCode requis' });
+
     const entry = await prisma.dictionaryEntry.create({
-      data: { languageId: language.id, langueCode, mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, status: 'PUBLISHED' },
+      data: { languageId: resolvedLanguageId, mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, imageUrl, status: 'PUBLISHED' },
     });
     res.status(201).json(entry);
   } catch (err) { next(err); }
@@ -128,10 +135,10 @@ const adminCreateWord = async (req, res, next) => {
 
 const adminUpdateWord = async (req, res, next) => {
   try {
-    const { mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, status } = req.body;
+    const { mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, imageUrl, status } = req.body;
     const entry = await prisma.dictionaryEntry.update({
       where: { id: req.params.id },
-      data: { mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, status },
+      data: { mot, traduction, transcription, categorie, exemplePhrase, exempleTraduction, audioUrl, imageUrl, status },
     });
     res.json(entry);
   } catch (err) { next(err); }
