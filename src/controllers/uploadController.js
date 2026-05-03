@@ -322,4 +322,33 @@ const uploadContributeImage = async (req, res, next) => {
   }
 };
 
-module.exports = { upload, uploadAudio, uploadImage, uploadContributeImage, bulkUploadAudio, bulkUploadWithMapping };
+// ============================================================
+// 6. Upload photo de profil utilisateur
+// ============================================================
+const uploadProfilePhoto = async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Aucune image fournie' });
+
+    const userId = req.user.id;
+
+    const result = await uploadToCloudinary(req.file.buffer, {
+      resource_type: 'image',
+      folder: 'langues-ivoire/profiles',
+      public_id: `profile_${userId}`,
+      overwrite: true,
+      transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' }],
+    });
+
+    // Mettre à jour la photo dans la BDD directement
+    await prisma.user.update({
+      where: { id: userId },
+      data: { photo: result.secure_url },
+    });
+
+    res.json({ success: true, imageUrl: result.secure_url });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { upload, uploadAudio, uploadImage, uploadContributeImage, uploadProfilePhoto, bulkUploadAudio, bulkUploadWithMapping };

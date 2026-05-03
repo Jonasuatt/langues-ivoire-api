@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
-const { upload, uploadAudio, uploadImage, uploadContributeImage, bulkUploadAudio, bulkUploadWithMapping } = require('../controllers/uploadController');
+const { upload, uploadAudio, uploadImage, uploadContributeImage, uploadProfilePhoto, bulkUploadAudio, bulkUploadWithMapping } = require('../controllers/uploadController');
 
 // Upload audio unique
 router.post('/audio', authenticate, requireEditor, upload.single('audio'), uploadAudio);
@@ -10,6 +10,9 @@ router.post('/image', authenticate, requireEditor, upload.single('image'), uploa
 
 // Upload image pour contribution utilisateur (utilisateurs authentifiés)
 router.post('/contribute-image', authenticate, upload.single('image'), uploadContributeImage);
+
+// Upload photo de profil (utilisateurs authentifiés)
+router.post('/profile-photo', authenticate, upload.single('image'), uploadProfilePhoto);
 
 // Import audio en lot (fichiers nommés comme les mots)
 router.post('/audio/bulk', authenticate, requireEditor, upload.array('audios', 50), bulkUploadAudio);
