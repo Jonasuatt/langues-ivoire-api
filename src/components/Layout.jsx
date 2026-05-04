@@ -1,9 +1,11 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   HomeIcon, BookOpenIcon, ChatBubbleLeftRightIcon, AcademicCapIcon,
   UserGroupIcon, UsersIcon, ArrowRightOnRectangleIcon,
   MusicalNoteIcon, VideoCameraIcon, MicrophoneIcon, ShieldCheckIcon,
+  TrophyIcon, BellIcon, GlobeAltIcon, ExclamationTriangleIcon,
+  EnvelopeIcon, LanguageIcon, PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 
@@ -33,9 +35,13 @@ const NAV_SECTIONS = [
     title: 'Contenu',
     items: [
       { to: '/', label: 'Tableau de bord', icon: HomeIcon, exact: true },
+      { to: '/dictionary', label: 'Dictionnaire', icon: LanguageIcon },
+      { to: '/conjugation', label: 'Conjugaison', icon: BookOpenIcon },
       { to: '/vocabulary', label: 'Vocabulaire', icon: BookOpenIcon },
       { to: '/lessons', label: 'Leçons', icon: AcademicCapIcon },
       { to: '/cultural', label: 'Culture & Traditions', icon: SparklesIcon },
+      { to: '/text-contents', label: 'Textes & Récits', icon: BookOpenIcon },
+      { to: '/image-galleries', label: 'Galeries d\'Images', icon: PhotoIcon },
       { to: '/videos', label: 'Vidéos', icon: VideoCameraIcon },
     ],
   },
@@ -43,6 +49,8 @@ const NAV_SECTIONS = [
     title: 'Communauté',
     items: [
       { to: '/contributions', label: 'Contributions', icon: ChatBubbleLeftRightIcon },
+      { to: '/messages', label: 'Messages', icon: EnvelopeIcon },
+      { to: '/certificates', label: 'Certificats', icon: AcademicCapIcon },
       { to: '/audio-contributions', label: 'IA Linguistique', icon: MicrophoneIcon },
       { to: '/audio-upload', label: 'Import Audio', icon: MusicalNoteIcon },
     ],
@@ -53,6 +61,15 @@ const NAV_SECTIONS = [
       { to: '/tutors',           label: 'Tuteurs IA',       icon: UserGroupIcon },
       { to: '/agents-test',      label: 'Test Agents IA',   icon: SparklesIcon },
       { to: '/welcome-settings', label: 'Bienvenue & Sons', icon: MusicalNoteIcon },
+    ],
+  },
+  {
+    title: 'Paramètres App',
+    items: [
+      { to: '/langues',      label: 'Langues',          icon: GlobeAltIcon },
+      { to: '/badges',       label: 'Badges & XP',      icon: TrophyIcon },
+      { to: '/sos-phrases',  label: 'Phrases SOS',      icon: ExclamationTriangleIcon },
+      { to: '/notifications',label: 'Notifications',    icon: BellIcon },
     ],
   },
   {
@@ -117,7 +134,7 @@ export default function Layout() {
 
         {/* Utilisateur connecté */}
         <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 mb-3">
+          <Link to="/profile" className="flex items-center gap-3 mb-3 hover:bg-white/10 rounded-lg p-1 -m-1 transition-colors">
             <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
               {user?.prenom?.[0]}{user?.nom?.[0]}
             </div>
@@ -128,7 +145,7 @@ export default function Layout() {
                 <p className="text-xs text-white/60 truncate">{ROLE_LABELS[user?.role] || user?.role}</p>
               </div>
             </div>
-          </div>
+          </Link>
           <button onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
             <ArrowRightOnRectangleIcon className="w-4 h-4" />

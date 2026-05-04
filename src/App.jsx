@@ -16,6 +16,17 @@ import VideosPage from './pages/VideosPage';
 import AudioContributionsPage from './pages/AudioContributionsPage';
 import AgentsTestPage from './pages/AgentsTestPage';
 import WelcomeSettingsPage from './pages/WelcomeSettingsPage';
+import BadgesPage from './pages/BadgesPage';
+import NotificationsPage from './pages/NotificationsPage';
+import LanguesPage from './pages/LanguesPage';
+import SOSPhrasesPage from './pages/SOSPhrasesPage';
+import ProfilePage from './pages/ProfilePage';
+import MessagesPage from './pages/MessagesPage';
+import CertificatesPage from './pages/CertificatesPage';
+import DictionaryPage from './pages/DictionaryPage';
+import ConjugationPage from './pages/ConjugationPage';
+import TextContentPage from './pages/TextContentPage';
+import ImageGalleryPage from './pages/ImageGalleryPage';
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -34,16 +45,27 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute roles={['ADMIN', 'SUPER_ADMIN', 'EDITOR', 'CONTRIBUTOR']}><Layout /></ProtectedRoute>}>
           <Route index element={<DashboardPage />} />
           <Route path="vocabulary" element={<VocabularyPage />} />
+          <Route path="dictionary" element={<DictionaryPage />} />
+          <Route path="conjugation" element={<ConjugationPage />} />
           <Route path="contributions" element={<ContributionsPage />} />
           <Route path="lessons" element={<LessonsPage />} />
           <Route path="lessons/:lessonId" element={<LessonEditorPage />} />
           <Route path="tutors" element={<TutorsPage />} />
           <Route path="cultural" element={<CulturalPage />} />
+          <Route path="text-contents" element={<TextContentPage />} />
+          <Route path="image-galleries" element={<ImageGalleryPage />} />
           <Route path="audio-upload" element={<AudioUploadPage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="audio-contributions" element={<AudioContributionsPage />} />
           <Route path="agents-test" element={<AgentsTestPage />} />
           <Route path="welcome-settings" element={<WelcomeSettingsPage />} />
+          <Route path="badges" element={<BadgesPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="langues" element={<LanguesPage />} />
+          <Route path="sos-phrases" element={<SOSPhrasesPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="messages" element={<MessagesPage />} />
+          <Route path="certificates" element={<CertificatesPage />} />
           <Route path="users" element={<ProtectedRoute roles={['ADMIN', 'SUPER_ADMIN']}><UsersPage /></ProtectedRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

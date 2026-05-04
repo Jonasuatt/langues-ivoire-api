@@ -25,6 +25,8 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
+  updateMe: (data) => api.patch('/auth/me', data),
+  changePassword: (data) => api.patch('/auth/change-password', data),
 };
 
 export const languagesAPI = {
@@ -104,7 +106,39 @@ export const videosAPI = {
 
 export const adminAPI = {
   getUsers: (params) => api.get('/admin/users', { params }),
+  createMember: (data) => api.post('/admin/users/create', data),
   updateUser: (id, data) => api.patch(`/admin/users/${id}`, data),
+};
+
+export const badgesAPI = {
+  getAll: () => api.get('/admin/badges'),
+  getOne: (id) => api.get(`/admin/badges/${id}`),
+  create: (data) => api.post('/admin/badges', data),
+  update: (id, data) => api.patch(`/admin/badges/${id}`, data),
+  delete: (id) => api.delete(`/admin/badges/${id}`),
+};
+
+export const adminNotificationsAPI = {
+  send: (data) => api.post('/admin/notifications/send', data),
+  getHistory: (params) => api.get('/admin/notifications/history', { params }),
+};
+
+export const supportAPI = {
+  getAll: (params) => api.get('/support', { params }),
+  reply: (id, data) => api.post(`/support/${id}/reply`, data),
+  updateStatus: (id, data) => api.patch(`/support/${id}/status`, data),
+};
+
+export const certificatesAPI = {
+  getAll: (params) => api.get('/certificates', { params }),
+  issue: (data) => api.post('/certificates', data),
+};
+
+export const phrasesAdminAPI = {
+  getAll: (params) => api.get('/admin/phrases', { params }),
+  create: (data) => api.post('/admin/phrases', data),
+  update: (id, data) => api.patch(`/admin/phrases/${id}`, data),
+  delete: (id) => api.delete(`/admin/phrases/${id}`),
 };
 
 export const agentChatAPI = {
