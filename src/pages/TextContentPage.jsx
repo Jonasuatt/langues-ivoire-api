@@ -9,17 +9,24 @@ import toast from 'react-hot-toast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TYPES = ['CONTE', 'HISTOIRE', 'CHANSON', 'RECIT', 'DESCRIPTION', 'LEGENDE', 'PROVERBE_LONG'];
+const DEFAULT_TYPES = [
+  { key: 'CONTE',         label: 'Conte',       emoji: '📖', color: 'bg-indigo-100 text-indigo-700' },
+  { key: 'HISTOIRE',      label: 'Histoire',    emoji: '🏛️',  color: 'bg-blue-100 text-blue-700' },
+  { key: 'CHANSON',       label: 'Chanson',     emoji: '🎵', color: 'bg-pink-100 text-pink-700' },
+  { key: 'RECIT',         label: 'Récit',       emoji: '📜', color: 'bg-amber-100 text-amber-700' },
+  { key: 'DESCRIPTION',   label: 'Description', emoji: '📝', color: 'bg-teal-100 text-teal-700' },
+  { key: 'LEGENDE',       label: 'Légende',     emoji: '⭐', color: 'bg-orange-100 text-orange-700' },
+  { key: 'PROVERBE_LONG', label: 'Proverbe',    emoji: '💡', color: 'bg-green-100 text-green-700' },
+];
 
-const TYPE_META = {
-  CONTE:        { label: 'Conte',       emoji: '📖', color: 'bg-indigo-100 text-indigo-700' },
-  HISTOIRE:     { label: 'Histoire',    emoji: '🏛️',  color: 'bg-blue-100 text-blue-700' },
-  CHANSON:      { label: 'Chanson',     emoji: '🎵', color: 'bg-pink-100 text-pink-700' },
-  RECIT:        { label: 'Récit',       emoji: '📜', color: 'bg-amber-100 text-amber-700' },
-  DESCRIPTION:  { label: 'Description', emoji: '📝', color: 'bg-teal-100 text-teal-700' },
-  LEGENDE:      { label: 'Légende',     emoji: '⭐', color: 'bg-orange-100 text-orange-700' },
-  PROVERBE_LONG:{ label: 'Proverbe',    emoji: '💡', color: 'bg-green-100 text-green-700' },
-};
+const STORAGE_KEY = 'textContentCustomTypes';
+
+function loadCustomTypes() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function saveCustomTypes(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
 
 const NIVEAUX = ['A1', 'A2', 'B1', 'B2', 'C1'];
 
@@ -159,6 +166,36 @@ export default function TextContentPage() {
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  // Custom types
+  const [customTypes, setCustomTypes] = useState(loadCustomTypes);
+  const [showNewType, setShowNewType] = useState(false);
+  const [newTypeLabel, setNewTypeLabel] = useState('');
+  const [newTypeEmoji, setNewTypeEmoji] = useState('✨');
+
+  const allTypes = [...DEFAULT_TYPES, ...customTypes];
+
+  const addCustomType = () => {
+    const label = newTypeLabel.trim();
+    if (!label) return;
+    const key = label.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
+    if (allTypes.some(t => t.key === key)) { toast.error('Ce type existe déjà'); return; }
+    const newType = { key, label, emoji: newTypeEmoji, color: 'bg-violet-100 text-violet-700', custom: true };
+    const updated = [...customTypes, newType];
+    setCustomTypes(updated);
+    saveCustomTypes(updated);
+    setForm(f => ({ ...f, type: key }));
+    setNewTypeLabel('');
+    setNewTypeEmoji('✨');
+    setShowNewType(false);
+    toast.success(`Type "${label}" créé !`);
+  };
+
+  const removeCustomType = (key) => {
+    const updated = customTypes.filter(t => t.key !== key);
+    setCustomTypes(updated);
+    saveCustomTypes(updated);
+  };
 
   // Upload state
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -385,7 +422,7 @@ export default function TextContentPage() {
           </div>
 
           {/* Type chips */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             <button
               onClick={() => setFilterType('')}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -396,22 +433,19 @@ export default function TextContentPage() {
             >
               Tous
             </button>
-            {TYPES.map(t => {
-              const meta = TYPE_META[t];
-              return (
-                <button
-                  key={t}
-                  onClick={() => setFilterType(t === filterType ? '' : t)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    filterType === t
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {meta.emoji} {meta.label}
-                </button>
-              );
-            })}
+            {allTypes.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setFilterType(t.key === filterType ? '' : t.key)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  filterType === t.key
+                    ? 'bg-violet-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {t.emoji} {t.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -438,7 +472,7 @@ export default function TextContentPage() {
         ) : (
           <div className="space-y-3">
             {filteredItems.map(item => {
-              const meta = TYPE_META[item.type] ?? TYPE_META.CONTE;
+              const meta = allTypes.find(t => t.key === item.type) ?? allTypes[0];
               const statusMeta = STATUS_META[item.status] ?? STATUS_META.DRAFT;
               const lang = languages.find(l => l.id === item.languageId);
               return (
@@ -621,17 +655,71 @@ export default function TextContentPage() {
 
                 {/* Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                    Type
+                    <button
+                      type="button"
+                      onClick={() => setShowNewType(v => !v)}
+                      className="text-xs text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1"
+                    >
+                      <PlusIcon className="w-3.5 h-3.5" />
+                      Nouveau type
+                    </button>
+                  </label>
                   <select
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-violet-300 focus:border-violet-400 outline-none transition-all"
                     value={form.type}
                     onChange={e => setForm({ ...form, type: e.target.value })}
                   >
-                    {TYPES.map(t => {
-                      const m = TYPE_META[t];
-                      return <option key={t} value={t}>{m.emoji} {m.label}</option>;
-                    })}
+                    {allTypes.map(t => (
+                      <option key={t.key} value={t.key}>{t.emoji} {t.label}</option>
+                    ))}
                   </select>
+
+                  {/* Inline new type form */}
+                  {showNewType && (
+                    <div className="mt-2 p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
+                      <p className="text-xs font-semibold text-violet-700">Créer un nouveau type</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newTypeEmoji}
+                          onChange={e => setNewTypeEmoji(e.target.value)}
+                          className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-violet-300 outline-none"
+                          placeholder="🎭"
+                          maxLength={4}
+                        />
+                        <input
+                          type="text"
+                          value={newTypeLabel}
+                          onChange={e => setNewTypeLabel(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && addCustomType()}
+                          className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-violet-300 outline-none"
+                          placeholder="Nom du type (ex: Mythe)"
+                        />
+                        <button
+                          type="button"
+                          onClick={addCustomType}
+                          className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                        >
+                          Créer
+                        </button>
+                      </div>
+                      {/* Custom types list with delete */}
+                      {customTypes.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {customTypes.map(t => (
+                            <span key={t.key} className="inline-flex items-center gap-1 bg-white text-violet-700 border border-violet-200 px-2 py-0.5 rounded-full text-xs font-medium">
+                              {t.emoji} {t.label}
+                              <button type="button" onClick={() => removeCustomType(t.key)} className="hover:text-red-500 transition-colors">
+                                <XMarkIcon className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Titre */}
