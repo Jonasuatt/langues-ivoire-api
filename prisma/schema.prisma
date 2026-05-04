@@ -113,6 +113,8 @@ model User {
   organizationMember  OrganizationMember[]
   audioContributions  AudioContribution[]
   practiceSessions    PracticeSession[]
+  supportMessages     SupportMessage[]
+  certificates        Certificate[]
 
   @@map("users")
 }
@@ -149,6 +151,7 @@ model Language {
   videos          Video[]
   audioContribs   AudioContribution[]
   practiceSessions PracticeSession[]
+  certificates    Certificate[]
 
   @@map("languages")
 }
@@ -545,4 +548,50 @@ model PracticeSession {
   language      Language  @relation(fields: [languageId], references: [id])
 
   @@map("practice_sessions")
+}
+
+// ==================== MESSAGERIE SUPPORT ====================
+
+model SupportMessage {
+  id        String         @id @default(uuid())
+  userId    String
+  sujet     String
+  corps     String
+  statut    String         @default("OUVERT")  // OUVERT, EN_COURS, RESOLU
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id])
+  reponses  SupportReply[]
+
+  @@map("support_messages")
+}
+
+model SupportReply {
+  id        String         @id @default(uuid())
+  messageId String
+  adminId   String
+  corps     String
+  createdAt DateTime       @default(now())
+
+  message   SupportMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("support_replies")
+}
+
+// ==================== CERTIFICATS ====================
+
+model Certificate {
+  id         String   @id @default(uuid())
+  userId     String
+  languageId String
+  niveau     String   // A1, A2, B1, B2, C1
+  issuedAt   DateTime @default(now())
+  issuedBy   String?  // adminId qui a émis le certificat
+
+  user       User     @relation(fields: [userId], references: [id])
+  language   Language @relation(fields: [languageId], references: [id])
+
+  @@unique([userId, languageId, niveau])
+  @@map("certificates")
 }

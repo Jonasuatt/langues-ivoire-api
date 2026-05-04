@@ -89,6 +89,20 @@ const moderateContribution = async (req, res, next) => {
       });
     }
 
+    // Envoyer une notification au contributeur
+    await prisma.notification.create({
+      data: {
+        userId: contribution.userId,
+        type: action === 'PUBLISHED' ? 'BADGE' : 'SYSTEM',
+        titre: action === 'PUBLISHED'
+          ? '✅ Contribution approuvée !'
+          : '❌ Contribution refusée',
+        corps: action === 'PUBLISHED'
+          ? `Votre ${contribution.type === 'WORD' ? 'mot' : 'phrase'} "${contribution.type === 'WORD' ? contribution.contenu.mot : contribution.contenu.phrase}" a été approuvé(e) et ajouté(e) au dictionnaire. Merci pour votre contribution !`
+          : `Votre contribution a été refusée.${commentaire ? ' Raison : ' + commentaire : ''} N'hésitez pas à proposer d'autres mots ou phrases.`,
+      },
+    });
+
     res.json(updated);
   } catch (err) {
     next(err);
