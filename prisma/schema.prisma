@@ -152,6 +152,8 @@ model Language {
   audioContribs   AudioContribution[]
   practiceSessions PracticeSession[]
   certificates    Certificate[]
+  premierSecoursPhrases PremierSecoursPhrase[]
+  civicContents   CivicContent[]
 
   @@map("languages")
 }
@@ -594,4 +596,51 @@ model Certificate {
 
   @@unique([userId, languageId, niveau])
   @@map("certificates")
+}
+
+// ==================== PREMIERS SECOURS ====================
+
+model PremierSecoursPhrase {
+  id            String    @id @default(uuid())
+  languageId    String?
+  situation     String    // 'etouffement', 'arret_cardiaque', 'fracture', 'brulure', 'mise_en_securite', 'appel_secours', 'noyade', 'saignement', 'malaise', 'evaluation', 'guide_medical'
+  consigne      String    // La consigne/phrase en langue locale
+  traduction    String?   // Traduction française
+  transcription String?   // Notation phonétique
+  audioUrl      String?   // Audio prioritaire (bouton large)
+  imageUrl      String?   // Schéma illustré universel
+  genreVoix     String?   // "M" ou "F"
+  priorite      Int       @default(0) // 0=information, 1=important, 2=vital
+  isActive      Boolean   @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  language      Language? @relation(fields: [languageId], references: [id])
+
+  @@map("premiers_secours_phrases")
+}
+
+// ==================== CIVISME ====================
+
+model CivicContent {
+  id          String    @id @default(uuid())
+  languageId  String?
+  type        String    // 'proverbe_civique', 'symbole_etat', 'sensibilisation'
+  titre       String
+  contenu     String    // Le proverbe/règle/conseil en langue locale (ou en français si transversal)
+  traduction  String?   // Traduction si contenu en langue locale
+  explication String?   // Sens profond, contexte culturel
+  audioUrl    String?
+  imageUrl    String?
+  genreVoix   String?   // "M" ou "F"
+  valeur      String?   // 'respect', 'solidarite', 'proprete', 'securite_routiere', 'environnement', 'patriotisme', 'etat'
+  isActive    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  language    Language? @relation(fields: [languageId], references: [id])
+
+  @@map("civic_content")
 }

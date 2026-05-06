@@ -26,6 +26,8 @@ const phrasesRoutes = require('./routes/phrases');
 const badgesRoutes = require('./routes/badges');
 const supportRoutes = require('./routes/support');
 const certificateRoutes = require('./routes/certificates');
+const premierSecoursRoutes = require('./routes/premierSecours');
+const civismeRoutes = require('./routes/civisme');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -78,6 +80,8 @@ app.use('/api/phrases', phrasesRoutes);
 app.use('/api/badges', badgesRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/premiers-secours', premierSecoursRoutes);
+app.use('/api/civisme', civismeRoutes);
 
 // Santé
 app.get('/health', (req, res) => {
