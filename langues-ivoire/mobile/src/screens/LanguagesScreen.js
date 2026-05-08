@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { languagesAPI } from '../services/api';
+import { offlineLanguagesAPI as languagesAPI } from '../services/offlineApi';
 
 const COLORS = { primary: '#0B3D2E', accent: '#F47920', bg: '#FAFAF8' };
 

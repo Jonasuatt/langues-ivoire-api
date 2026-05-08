@@ -1,18 +1,59 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  HomeIcon, BookOpenIcon, ChatBubbleLeftRightIcon, AcademicCapIcon,
-  UserGroupIcon, SparklesIcon, GlobeAltIcon, UsersIcon, ArrowRightOnRectangleIcon,
+  HomeIcon, BookOpenIcon, AcademicCapIcon, SparklesIcon, VideoCameraIcon,
+  ChatBubbleLeftRightIcon, CpuChipIcon, MicrophoneIcon,
+  UserGroupIcon, BeakerIcon, MusicalNoteIcon,
+  GlobeAltIcon, TrophyIcon, BellIcon,
+  HeartIcon, BuildingLibraryIcon, UsersIcon,
+  ArrowRightOnRectangleIcon, ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 
-const NAV = [
-  { to: '/', label: 'Tableau de bord', icon: HomeIcon, exact: true },
-  { to: '/vocabulary', label: 'Vocabulaire', icon: BookOpenIcon },
-  { to: '/contributions', label: 'Contributions', icon: ChatBubbleLeftRightIcon },
-  { to: '/lessons', label: 'Leçons', icon: AcademicCapIcon },
-  { to: '/tutors', label: 'Tuteurs IA', icon: UserGroupIcon },
-  { to: '/cultural', label: 'Culture', icon: SparklesIcon },
-  { to: '/users', label: 'Utilisateurs', icon: UsersIcon, adminOnly: true },
+const NAV_SECTIONS = [
+  {
+    items: [
+      { to: '/', label: 'Tableau de bord', icon: HomeIcon, exact: true },
+      { to: '/vocabulary', label: 'Vocabulaire', icon: BookOpenIcon },
+      { to: '/lessons', label: 'Leçons', icon: AcademicCapIcon },
+      { to: '/cultural', label: 'Culture & Traditions', icon: SparklesIcon },
+      { to: '/videos', label: 'Vidéos', icon: VideoCameraIcon },
+    ],
+  },
+  {
+    group: 'COMMUNAUTÉ',
+    items: [
+      { to: '/contributions', label: 'Contributions', icon: ChatBubbleLeftRightIcon },
+      { to: '/ia-linguistique', label: 'IA Linguistique', icon: CpuChipIcon },
+      { to: '/voix-audio', label: 'Import Audio', icon: MicrophoneIcon },
+    ],
+  },
+  {
+    group: 'INTELLIGENCE ARTIFICIELLE',
+    items: [
+      { to: '/tutors', label: 'Tuteurs IA', icon: UserGroupIcon },
+      { to: '/test-agents', label: 'Test Agents IA', icon: BeakerIcon },
+      { to: '/bienvenue-sons', label: 'Bienvenue & Sons', icon: MusicalNoteIcon },
+    ],
+  },
+  {
+    group: 'PARAMÈTRES APP',
+    items: [
+      { to: '/langues', label: 'Langues', icon: GlobeAltIcon },
+      { to: '/badges', label: 'Badges & XP', icon: TrophyIcon },
+      { to: '/phrases-sos', label: 'Phrases SOS', icon: ExclamationTriangleIcon },
+      { to: '/phrases-utiles', label: 'Phrases Utiles', icon: ChatBubbleLeftRightIcon },
+      { to: '/notifications', label: 'Notifications', icon: BellIcon },
+      { to: '/premiers-secours', label: 'Premiers Secours', icon: HeartIcon },
+      { to: '/civisme', label: 'Civisme', icon: BuildingLibraryIcon },
+    ],
+  },
+  {
+    group: 'ADMINISTRATION',
+    adminOnly: true,
+    items: [
+      { to: '/users', label: 'Utilisateurs', icon: UsersIcon, adminOnly: true },
+    ],
+  },
 ];
 
 export default function Layout() {
@@ -20,6 +61,8 @@ export default function Layout() {
   const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -37,21 +80,36 @@ export default function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {NAV.filter(n => !n.adminOnly || user?.role === 'ADMIN').map(({ to, label, icon: Icon, exact }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={exact}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'bg-white/20 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              {label}
-            </NavLink>
+        <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+          {NAV_SECTIONS.filter(section => !section.adminOnly || isAdmin).map((section, sIdx) => (
+            <div key={sIdx}>
+              {section.group && (
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/50">
+                  {section.group}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {section.items
+                  .filter(item => !item.adminOnly || isAdmin)
+                  .map(({ to, label, icon: Icon, exact }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end={exact}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        }`
+                      }
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      {label}
+                    </NavLink>
+                  ))}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -66,8 +124,10 @@ export default function Layout() {
               <p className="text-xs text-white/60">{user?.role}</p>
             </div>
           </div>
-          <button onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
             <ArrowRightOnRectangleIcon className="w-4 h-4" />
             Déconnexion
           </button>

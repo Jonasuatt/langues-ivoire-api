@@ -3,13 +3,17 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { lessonsAPI, progressAPI } from '../services/api';
+import { progressAPI } from '../services/api';
+import { offlineLessonsAPI as lessonsAPI } from '../services/offlineApi';
+import AudioButton from '../components/AudioButton';
 
 const COLORS = { primary: '#0B3D2E', accent: '#F47920', bg: '#FAFAF8' };
 
 export default function LessonDetailScreen({ route, navigation }) {
   const { languageId, languageCode, languageName } = route.params;
+  const insets = useSafeAreaInsets();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState(null);
@@ -74,9 +78,28 @@ export default function LessonDetailScreen({ route, navigation }) {
 
             {step?.contenu?.mots && step.contenu.mots.map((mot, i) => (
               <View key={i} style={styles.vocabRow}>
-                <Text style={styles.vocabMot}>{mot.mot}</Text>
-                <Text style={styles.vocabPhon}>[{mot.transcription}]</Text>
-                <Text style={styles.vocabTrad}>{mot.traduction}</Text>
+                <View style={styles.vocabRowLeft}>
+                  <Text style={styles.vocabMot}>{mot.mot}</Text>
+                  {mot.transcription ? <Text style={styles.vocabPhon}>[{mot.transcription}]</Text> : null}
+                  <Text style={styles.vocabTrad}>{mot.traduction}</Text>
+                </View>
+                {/* Boutons audio : langue locale + français */}
+                <View style={styles.vocabAudioCol}>
+                  <AudioButton
+                    audioUrl={mot.audioUrl}
+                    text={mot.mot}
+                    langCode={languageCode}
+                    size={18}
+                  />
+                  {mot.traduction ? (
+                    <AudioButton
+                      text={mot.traduction}
+                      langCode="fr"
+                      size={18}
+                      color="#0B3D2E"
+                    />
+                  ) : null}
+                </View>
               </View>
             ))}
 
@@ -91,7 +114,7 @@ export default function LessonDetailScreen({ route, navigation }) {
           </View>
         </ScrollView>
 
-        <View style={styles.navButtons}>
+        <View style={[styles.navButtons, { paddingBottom: insets.bottom + 16 }]}>
           {currentStep > 0 && (
             <TouchableOpacity style={styles.btnSecondary} onPress={() => setCurrentStep(s => s - 1)}>
               <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
@@ -189,12 +212,15 @@ const styles = StyleSheet.create({
   stepCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20,
               shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   stepTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary, marginBottom: 16 },
-  vocabRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  vocabRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
+              paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  vocabRowLeft: { flex: 1, marginRight: 10 },
+  vocabAudioCol: { flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 2 },
   vocabMot: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
   vocabPhon: { fontSize: 13, color: '#888', fontStyle: 'italic' },
   vocabTrad: { fontSize: 15, color: '#444', marginTop: 2 },
   stepText: { fontSize: 15, lineHeight: 24, color: '#333' },
-  navButtons: { flexDirection: 'row', padding: 16, gap: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee' },
+  navButtons: { flexDirection: 'row', paddingTop: 16, paddingHorizontal: 16, gap: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee' },
   btnPrimary: { flex: 1, backgroundColor: COLORS.accent, borderRadius: 12,
                 paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   btnPrimaryText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
