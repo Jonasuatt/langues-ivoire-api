@@ -42,10 +42,15 @@ app.use(cors({
 }));
 
 // Rate limiting global (désactivé en développement local)
+// Les requêtes avec un token JWT valide sont exemptées (admins CMS)
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300,
+    max: 500,
+    skip: (req) => {
+      // Exempter les requêtes authentifiées (Bearer token présent)
+      return !!(req.headers.authorization && req.headers.authorization.startsWith('Bearer '));
+    },
     message: { error: 'Trop de requêtes, réessayez plus tard.' },
   });
   app.use('/api/', limiter);
