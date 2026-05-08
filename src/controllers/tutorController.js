@@ -6,7 +6,6 @@ const getTutors = async (req, res, next) => {
     const tutors = await prisma.tutor.findMany({
       where: { isActive: true },
       include: { language: { select: { nom: true, code: true } } },
-      orderBy: { nomAvatar: 'asc' },
     });
     res.json(tutors);
   } catch (err) {
