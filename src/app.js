@@ -41,13 +41,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate limiting global
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: { error: 'Trop de requêtes, réessayez plus tard.' },
-});
-app.use('/api/', limiter);
+// Rate limiting global (désactivé en développement local)
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300,
+    message: { error: 'Trop de requêtes, réessayez plus tard.' },
+  });
+  app.use('/api/', limiter);
+}
 
 // Corps des requêtes
 app.use(express.json({ limit: '10mb' }));
