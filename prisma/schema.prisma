@@ -245,10 +245,11 @@ model UsefulPhrase {
   phrase        String
   transcription String?
   traduction    String
-  audioUrl      String?
-  categorie     String?       // salutations, commerce, urgence, etc.
-  contexte      String?
-  status        ContentStatus @default(DRAFT)
+  audioUrl        String?
+  categorie       String?       // salutations, commerce, urgence, etc.
+  contexte        String?
+  genreLocuteur   String?       // 'M' | 'F' | null — genre du locuteur audio
+  status          ContentStatus @default(DRAFT)
   contributorId String?
   moderatorId   String?
   moderatedAt   DateTime?
