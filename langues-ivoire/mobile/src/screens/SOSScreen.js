@@ -165,6 +165,9 @@ const BODY_PARTS = {
   BODY_PARTS[l] = BODY_PARTS.dioula;
 });
 
+// IDs des parties du corps dans l'ordre attendu par la carte corporelle
+const BODY_PART_IDS = ['tete', 'gorge', 'poitrine', 'ventre', 'bras', 'dos', 'jambe', 'pied'];
+
 // ─── Composant principal ────────────────────────────────────────────────────
 export default function SOSScreen() {
   const navigation = useNavigation();
@@ -175,36 +178,69 @@ export default function SOSScreen() {
   const [selectedBodyPart, setSelectedBodyPart] = useState(null);
   // Phrases chargées depuis l'API (par code de langue)
   const [apiPhrases, setApiPhrases] = useState({});
+  // Parties du corps chargées depuis l'API (par code de langue)
+  const [apiBodyParts, setApiBodyParts] = useState({});
 
   const loopRef        = useRef(null);
   const isLoopingRef   = useRef(false);   // ref pour la boucle (évite les closures périmées)
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Charger les phrases SOS depuis l'API pour toutes les langues
+  // Charger les phrases SOS depuis l'API pour toutes les langues (urgence + corps)
   useEffect(() => {
-    const fetchPhrases = async () => {
-      const result = {};
+    const fetchAll = async () => {
+      const urgenceResult = {};
+      const corpsResult   = {};
+
       await Promise.allSettled(
         LANGUAGES.map(async (l) => {
           try {
-            const res = await phrasesAPI.getByLanguage(l.code, 'urgence');
-            const data = res.data?.data || [];
-            if (data.length > 0) {
-              result[l.code] = data.map(p => ({
-                fr: p.traduction,
-                local: p.phrase,
-                emoji: p.contexte || '🆘',
+            // ── Phrases vitales (urgence) ──
+            const urgRes = await phrasesAPI.getByLanguage(l.code, 'urgence');
+            const urgData = urgRes.data?.data || [];
+            if (urgData.length > 0) {
+              urgenceResult[l.code] = urgData.map(p => ({
+                fr:       p.traduction,
+                local:    p.phrase,
+                emoji:    p.contexte || '🆘',
                 audioUrl: p.audioUrl || null,
               }));
             }
-          } catch { /* silencieux — fallback sur les phrases intégrées */ }
+          } catch { /* fallback intégré */ }
+
+          try {
+            // ── Parties du corps (corps) ──
+            const corpsRes = await phrasesAPI.getByLanguage(l.code, 'corps');
+            const corpsData = corpsRes.data?.data || [];
+            if (corpsData.length > 0) {
+              // Convertir en map { bodyPartId → { phrase, fr, emoji, audioUrl } }
+              // contexte = identifiant de la partie (tete, gorge, …)
+              const map = {};
+              corpsData.forEach(p => {
+                if (p.contexte) {
+                  map[p.contexte] = {
+                    id:       p.contexte,
+                    label:    BODY_PARTS[l.code]?.find(b => b.id === p.contexte)?.label || p.contexte,
+                    phrase:   p.phrase,
+                    fr:       p.traduction,
+                    emoji:    BODY_PARTS[l.code]?.find(b => b.id === p.contexte)?.emoji || '🩺',
+                    audioUrl: p.audioUrl || null,
+                  };
+                }
+              });
+              // Reconstruire le tableau dans l'ordre des 8 parties
+              const ordered = BODY_PART_IDS.map(id =>
+                map[id] || BODY_PARTS[l.code]?.find(b => b.id === id) || BODY_PARTS.dioula.find(b => b.id === id)
+              ).filter(Boolean);
+              if (ordered.length > 0) corpsResult[l.code] = ordered;
+            }
+          } catch { /* fallback intégré */ }
         })
       );
-      if (Object.keys(result).length > 0) {
-        setApiPhrases(result);
-      }
+
+      if (Object.keys(urgenceResult).length > 0) setApiPhrases(urgenceResult);
+      if (Object.keys(corpsResult).length > 0)   setApiBodyParts(corpsResult);
     };
-    fetchPhrases();
+    fetchAll();
   }, []);
 
   // Pulsation du bandeau SOS
@@ -308,10 +344,12 @@ export default function SOSScreen() {
   };
 
   const lang = LANGUAGES.find(l => l.code === selectedLang);
-  // Priorité : phrases API (gérées par les animateurs) > hardcoded fallback
+  // Priorité : phrases API (gérées par les animateurs CMS) > hardcoded fallback
   const phrases = (apiPhrases[selectedLang]?.length > 0 ? apiPhrases[selectedLang] : null)
     || SOS_PHRASES[selectedLang] || SOS_PHRASES.dioula;
-  const bodyParts = BODY_PARTS[selectedLang] || BODY_PARTS.dioula;
+  // Pareil pour les parties du corps
+  const bodyParts = (apiBodyParts[selectedLang]?.length > 0 ? apiBodyParts[selectedLang] : null)
+    || BODY_PARTS[selectedLang] || BODY_PARTS.dioula;
 
   return (
     <View style={styles.root}>
