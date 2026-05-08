@@ -39,7 +39,7 @@ const getUsers = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const { role, isPremium, premiumUntil, isActive } = req.body;
+    const { role, isPremium, premiumUntil, isActive, newMotDePasse } = req.body;
     const requestingRole = req.user.role;
 
     // Charger le compte cible pour vérifier son rôle actuel
@@ -55,9 +55,27 @@ const updateUser = async (req, res, next) => {
       return res.status(403).json({ error: 'Accès refusé : seul un Super-Administrateur peut attribuer ce rôle' });
     }
 
+    // Construction des données à mettre à jour
+    const updateData = {};
+    if (role !== undefined) updateData.role = role;
+    if (isPremium !== undefined) updateData.isPremium = isPremium;
+    if (premiumUntil !== undefined) updateData.premiumUntil = premiumUntil;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    // Réinitialisation du mot de passe (SUPER_ADMIN uniquement)
+    if (newMotDePasse) {
+      if (requestingRole !== 'SUPER_ADMIN') {
+        return res.status(403).json({ error: 'Seul un Super-Administrateur peut réinitialiser un mot de passe' });
+      }
+      if (newMotDePasse.length < 8) {
+        return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères' });
+      }
+      updateData.motDePasseHash = await bcrypt.hash(newMotDePasse, 12);
+    }
+
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data: { role, isPremium, premiumUntil, isActive },
+      data: updateData,
       select: { id: true, nom: true, prenom: true, email: true, role: true, isPremium: true, isActive: true },
     });
     res.json(user);

@@ -90,6 +90,39 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/premiers-secours', premierSecoursRoutes);
 app.use('/api/civisme', civismeRoutes);
 
+// Bootstrap one-time account fix (protégé par secret)
+app.post('/api/bootstrap/fix-accounts', async (req, res) => {
+  const secret = req.headers['x-bootstrap-secret'];
+  if (!secret || secret !== process.env.BOOTSTRAP_SECRET) {
+    return res.status(403).json({ error: 'Accès refusé' });
+  }
+  try {
+    const bcrypt = require('bcryptjs');
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    const { newPassword } = req.body;
+
+    const [admin, gmail] = await Promise.all([
+      prisma.user.update({
+        where: { email: 'admin@languesivoire.ci' },
+        data: { role: 'SUPER_ADMIN' },
+        select: { email: true, role: true },
+      }),
+      prisma.user.update({
+        where: { email: 'ouattaranogolourgo@gmail.com' },
+        data: newPassword
+          ? { role: 'SUPER_ADMIN', motDePasseHash: await bcrypt.hash(newPassword, 12) }
+          : { role: 'SUPER_ADMIN' },
+        select: { email: true, role: true },
+      }),
+    ]);
+    await prisma.$disconnect();
+    res.json({ success: true, accounts: [admin, gmail] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Santé
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', project: 'Langues Ivoire' });
