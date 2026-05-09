@@ -1,5 +1,8 @@
+-- Nettoyage au cas où la migration précédente aurait partiellement créé la table
+DROP TABLE IF EXISTS "text_contents" CASCADE;
+
 -- CreateTable: text_contents — Textes & Récits (contes, chansons, histoires, légendes, proverbes…)
-CREATE TABLE IF NOT EXISTS "text_contents" (
+CREATE TABLE "text_contents" (
     "id"             TEXT NOT NULL,
     "languageId"     TEXT,
     "type"           TEXT NOT NULL DEFAULT 'CONTE',
@@ -23,8 +26,8 @@ CREATE TABLE IF NOT EXISTS "text_contents" (
 );
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "text_contents_languageId_status_idx" ON "text_contents"("languageId", "status");
-CREATE INDEX IF NOT EXISTS "text_contents_type_idx" ON "text_contents"("type");
+CREATE INDEX "text_contents_languageId_status_idx" ON "text_contents"("languageId", "status");
+CREATE INDEX "text_contents_type_idx" ON "text_contents"("type");
 
 -- AddForeignKey
 ALTER TABLE "text_contents" ADD CONSTRAINT "text_contents_languageId_fkey" FOREIGN KEY ("languageId") REFERENCES "languages"("id") ON DELETE SET NULL ON UPDATE CASCADE;
