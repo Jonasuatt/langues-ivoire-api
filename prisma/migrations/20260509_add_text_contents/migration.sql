@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "text_contents" (
     "niveau"         TEXT NOT NULL DEFAULT 'A1',
     "auteur"         TEXT,
     "sourceEthnique" TEXT,
-    "tags"           TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "tags"           TEXT[] NOT NULL DEFAULT '{}',
     "dureeMin"       INTEGER,
     "status"         "ContentStatus" NOT NULL DEFAULT 'DRAFT',
     "createdAt"      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -26,8 +26,5 @@ CREATE TABLE IF NOT EXISTS "text_contents" (
 CREATE INDEX IF NOT EXISTS "text_contents_languageId_status_idx" ON "text_contents"("languageId", "status");
 CREATE INDEX IF NOT EXISTS "text_contents_type_idx" ON "text_contents"("type");
 
--- AddForeignKey (optionnel — languageId nullable)
-ALTER TABLE "text_contents"
-    ADD CONSTRAINT "text_contents_languageId_fkey"
-    FOREIGN KEY ("languageId") REFERENCES "languages"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey
+ALTER TABLE "text_contents" ADD CONSTRAINT "text_contents_languageId_fkey" FOREIGN KEY ("languageId") REFERENCES "languages"("id") ON DELETE SET NULL ON UPDATE CASCADE;
