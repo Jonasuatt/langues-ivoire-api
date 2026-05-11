@@ -30,6 +30,7 @@ const premierSecoursRoutes = require('./routes/premierSecours');
 const civismeRoutes = require('./routes/civisme');
 const textContentRoutes = require('./routes/textContent');
 const imageGalleryRoutes = require('./routes/imageGalleries');
+const marcheDialoguesRoutes = require('./routes/marcheDialogues');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -93,6 +94,7 @@ app.use('/api/premiers-secours', premierSecoursRoutes);
 app.use('/api/civisme', civismeRoutes);
 app.use('/api/text-contents', textContentRoutes);
 app.use('/api/image-galleries', imageGalleryRoutes);
+app.use('/api/marche-dialogues', marcheDialoguesRoutes);
 
 // Santé
 app.get('/health', (req, res) => {

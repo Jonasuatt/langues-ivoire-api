@@ -54,6 +54,7 @@ enum CulturalItemType {
   TALE
   MUSIC
   DANCE
+  TRESOR
 }
 
 enum NotificationType {
@@ -156,6 +157,7 @@ model Language {
   civicContents   CivicContent[]
   textContents    TextContent[]
   imageGalleries  ImageGallery[]
+  marcheDialogues MarcheDialogue[]
 
   @@map("languages")
 }
@@ -325,7 +327,11 @@ model CulturalItem {
   imageUrl        String?
   videoUrl        String?
   auteur          String?
-  sourceEthnique  String?
+  sourceEthnique  String?          // ethnie pour les TRESOR (baoule, dioula, etc.)
+  seuilXp         Int?             // XP nécessaire pour débloquer (TRESOR)
+  matiere         String?          // matière de fabrication (TRESOR)
+  typeObjet       String?          // type d'objet (TRESOR)
+  emoji           String?          // emoji représentatif (TRESOR)
   datePublication DateTime         @default(now())
   isActive        Boolean          @default(true)
 
@@ -694,6 +700,27 @@ model TextContent {
   @@index([languageId, status])
   @@index([type])
   @@map("text_contents")
+}
+
+// ==================== MARCHÉ ====================
+
+model MarcheDialogue {
+  id          String   @id @default(uuid())
+  languageId  String
+  vendeur     String                     // Nom du vendeur (Amara, Koffi…)
+  vendeurDesc String?                    // Description (Commerçant de Bouaké)
+  salutation  String                     // Phrase d'accueil initiale
+  repliques   Json                       // [{vendeurDit, motJuste:{mot,sens,effet}, leurres:[], conseil}]
+  audioSalutation String?                // Audio de la salutation
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  language    Language @relation(fields: [languageId], references: [id])
+
+  @@index([languageId])
+  @@map("marche_dialogues")
 }
 
 // ==================== CIVISME ====================
