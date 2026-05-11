@@ -248,8 +248,9 @@ model UsefulPhrase {
   traduction    String
   audioUrl      String?   // langue locale
   audioUrlFr    String?   // français
-  categorie     String?       // salutations, commerce, urgence, etc.
+  categorie     String?   // salutations, commerce, urgence, etc.
   contexte      String?
+  genreLocuteur String?   // 'M' | 'F' | null — genre du locuteur audio
   status        ContentStatus @default(DRAFT)
   contributorId String?
   moderatorId   String?
@@ -624,6 +625,37 @@ model PremierSecoursPhrase {
   @@map("premiers_secours_phrases")
 }
 
+// ==================== TEXTES & RÉCITS ====================
+
+model TextContent {
+  id              String        @id @default(uuid())
+  languageId      String?
+  type            String        @default("CONTE") // CONTE, HISTOIRE, CHANSON, RECIT, DESCRIPTION, LEGENDE, PROVERBE_LONG, ou custom
+  titre           String
+  contenu         String        // texte complet en langue locale
+  traduction      String?       // traduction française
+  transcription   String?       // notation phonétique
+  resume          String?       // résumé court (max 300 chars)
+  audioUrl        String?       // langue locale
+  audioUrlFr      String?       // français
+  imageUrl        String?
+  niveau          String        @default("A1")   // A1, A2, B1, B2, C1
+  auteur          String?
+  sourceEthnique  String?
+  tags            String[]      @default([])
+  dureeMin        Int?          // durée de lecture estimée en minutes
+  status          ContentStatus @default(DRAFT)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  language        Language?     @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, status])
+  @@index([type])
+  @@map("text_contents")
+}
+
 // ==================== CIVISME ====================
 
 model CivicContent {
@@ -649,33 +681,3 @@ model CivicContent {
   @@map("civic_content")
 }
 
-// ==================== TEXTES & RÉCITS ====================
-
-model TextContent {
-  id             String        @id @default(uuid())
-  languageId     String?
-  type           String        @default("CONTE") // CONTE, PROVERBE, LEGENDE, CHANSON, RECIT, HISTOIRE, DESCRIPTION
-  titre          String
-  contenu        String
-  traduction     String?
-  transcription  String?
-  resume         String?
-  audioUrl       String?       // langue locale
-  audioUrlFr     String?       // français
-  imageUrl       String?
-  niveau         String        @default("A1")
-  auteur         String?
-  sourceEthnique String?
-  tags           String[]      @default([])
-  dureeMin       Int?
-  status         ContentStatus @default(DRAFT)
-
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  language       Language?     @relation(fields: [languageId], references: [id])
-
-  @@index([languageId, status])
-  @@index([type])
-  @@map("text_contents")
-}
