@@ -154,6 +154,7 @@ model Language {
   certificates    Certificate[]
   premierSecoursPhrases PremierSecoursPhrase[]
   civicContents   CivicContent[]
+  textContents    TextContent[]
 
   @@map("languages")
 }
@@ -245,7 +246,8 @@ model UsefulPhrase {
   phrase        String
   transcription String?
   traduction    String
-  audioUrl      String?
+  audioUrl      String?   // langue locale
+  audioUrlFr    String?   // français
   categorie     String?       // salutations, commerce, urgence, etc.
   contexte      String?
   status        ContentStatus @default(DRAFT)
@@ -607,7 +609,8 @@ model PremierSecoursPhrase {
   consigne      String    // La consigne/phrase en langue locale
   traduction    String?   // Traduction française
   transcription String?   // Notation phonétique
-  audioUrl      String?   // Audio prioritaire (bouton large)
+  audioUrl      String?   // Audio prioritaire (bouton large) — langue locale
+  audioUrlFr    String?   // Audio en français
   imageUrl      String?   // Schéma illustré universel
   genreVoix     String?   // "M" ou "F"
   priorite      Int       @default(0) // 0=information, 1=important, 2=vital
@@ -631,7 +634,8 @@ model CivicContent {
   contenu     String    // Le proverbe/règle/conseil en langue locale (ou en français si transversal)
   traduction  String?   // Traduction si contenu en langue locale
   explication String?   // Sens profond, contexte culturel
-  audioUrl    String?
+  audioUrl    String?   // langue locale
+  audioUrlFr  String?   // français
   imageUrl    String?
   genreVoix   String?   // "M" ou "F"
   valeur      String?   // 'respect', 'solidarite', 'proprete', 'securite_routiere', 'environnement', 'patriotisme', 'etat'
@@ -643,4 +647,35 @@ model CivicContent {
   language    Language? @relation(fields: [languageId], references: [id])
 
   @@map("civic_content")
+}
+
+// ==================== TEXTES & RÉCITS ====================
+
+model TextContent {
+  id             String        @id @default(uuid())
+  languageId     String?
+  type           String        @default("CONTE") // CONTE, PROVERBE, LEGENDE, CHANSON, RECIT, HISTOIRE, DESCRIPTION
+  titre          String
+  contenu        String
+  traduction     String?
+  transcription  String?
+  resume         String?
+  audioUrl       String?       // langue locale
+  audioUrlFr     String?       // français
+  imageUrl       String?
+  niveau         String        @default("A1")
+  auteur         String?
+  sourceEthnique String?
+  tags           String[]      @default([])
+  dureeMin       Int?
+  status         ContentStatus @default(DRAFT)
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  language       Language?     @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, status])
+  @@index([type])
+  @@map("text_contents")
 }
