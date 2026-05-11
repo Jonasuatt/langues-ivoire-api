@@ -155,6 +155,7 @@ model Language {
   premierSecoursPhrases PremierSecoursPhrase[]
   civicContents   CivicContent[]
   textContents    TextContent[]
+  imageGalleries  ImageGallery[]
 
   @@map("languages")
 }
@@ -623,6 +624,45 @@ model PremierSecoursPhrase {
   language      Language? @relation(fields: [languageId], references: [id])
 
   @@map("premiers_secours_phrases")
+}
+
+// ==================== GALERIES D'IMAGES ====================
+
+model ImageGallery {
+  id          String        @id @default(uuid())
+  languageId  String?
+  rubrique    String        @default("")
+  titre       String
+  description String?
+  coverUrl    String?
+  ordre       Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  language    Language?     @relation(fields: [languageId], references: [id])
+  images      GalleryImage[]
+
+  @@index([languageId])
+  @@map("image_galleries")
+}
+
+model GalleryImage {
+  id            String       @id @default(uuid())
+  galleryId     String
+  imageUrl      String
+  legende       String?
+  transcription String?
+  traduction    String?
+  ordre         Int          @default(1)
+
+  createdAt     DateTime     @default(now())
+
+  gallery       ImageGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  @@index([galleryId])
+  @@map("gallery_images")
 }
 
 // ==================== TEXTES & RÉCITS ====================
