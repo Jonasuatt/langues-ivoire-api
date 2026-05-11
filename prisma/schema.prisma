@@ -332,6 +332,7 @@ model CulturalItem {
   matiere         String?          // matière de fabrication (TRESOR)
   typeObjet       String?          // type d'objet (TRESOR)
   emoji           String?          // emoji représentatif (TRESOR)
+  audioUrlFr      String?          // audio en français
   datePublication DateTime         @default(now())
   isActive        Boolean          @default(true)
 

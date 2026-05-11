@@ -34,9 +34,12 @@ router.get('/', async (req, res, next) => {
         transcription: true,
         traduction: true,
         audioUrl: true,
+        audioUrlFr: true,
+        genreLocuteur: true,
         categorie: true,
         contexte: true,
         languageId: true,
+        language: { select: { nom: true, code: true } },
       },
     });
 
