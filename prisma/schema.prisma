@@ -139,6 +139,12 @@ model Language {
   traditionalAudioUrl  String?   // URL Cloudinary du son traditionnel (~5s)
   welcomeMessage       String?   // Message lu en TTS à la sélection de langue
 
+  // Carte géographique
+  lat             Float?    // Latitude (ex: 7.54)
+  lng             Float?    // Longitude (ex: -5.55)
+  couleur         String?   // Couleur hexadécimale (ex: "#D4A017")
+  emoji           String?   // Emoji représentatif (ex: "🌿")
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

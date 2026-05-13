@@ -58,6 +58,7 @@ const updateLanguage = async (req, res, next) => {
       nom, code, famille, region, locuteurs, imageDrapeau,
       description, ordreAffichage, isActive, isInMvp,
       traditionalAudioUrl, welcomeMessage,
+      lat, lng, couleur, emoji,
     } = req.body;
 
     const data = {};
@@ -73,6 +74,10 @@ const updateLanguage = async (req, res, next) => {
     if (isInMvp           !== undefined) data.isInMvp           = isInMvp;
     if (traditionalAudioUrl !== undefined) data.traditionalAudioUrl = traditionalAudioUrl || null;
     if (welcomeMessage    !== undefined) data.welcomeMessage    = welcomeMessage || null;
+    if (lat               !== undefined) data.lat               = lat !== null ? parseFloat(lat) : null;
+    if (lng               !== undefined) data.lng               = lng !== null ? parseFloat(lng) : null;
+    if (couleur           !== undefined) data.couleur           = couleur || null;
+    if (emoji             !== undefined) data.emoji             = emoji || null;
 
     const language = await prisma.language.update({
       where: { id: req.params.id },
