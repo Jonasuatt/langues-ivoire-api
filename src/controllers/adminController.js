@@ -62,10 +62,10 @@ const updateUser = async (req, res, next) => {
     if (premiumUntil !== undefined) updateData.premiumUntil = premiumUntil;
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    // Réinitialisation du mot de passe (SUPER_ADMIN uniquement)
+    // Réinitialisation du mot de passe (ADMIN ou SUPER_ADMIN)
     if (newMotDePasse) {
-      if (requestingRole !== 'SUPER_ADMIN') {
-        return res.status(403).json({ error: 'Seul un Super-Administrateur peut réinitialiser un mot de passe' });
+      if (!['ADMIN', 'SUPER_ADMIN'].includes(requestingRole)) {
+        return res.status(403).json({ error: 'Accès refusé' });
       }
       if (newMotDePasse.length < 8) {
         return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères' });
