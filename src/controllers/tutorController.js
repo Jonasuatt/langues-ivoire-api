@@ -122,4 +122,37 @@ const deleteTutor = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getTutors, getTutor, chatWithTutor, requestPronunciation, createTutor, updateTutor, deleteTutor };
+// ── Admin : tous les tuteurs (actifs + dormants) ──────────────────────────────
+const getAllTutorsAdmin = async (req, res, next) => {
+  try {
+    const tutors = await prisma.tutor.findMany({
+      orderBy: [
+        { isActive: 'desc' },
+        { language: { nom: 'asc' } },
+        { genre: 'asc' },
+      ],
+      include: {
+        language: { select: { nom: true, code: true, couleur: true, emoji: true, famille: true } },
+      },
+    });
+    res.json(tutors);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Activer un tuteur dormant ────────────────────────────────────────────────
+const activateTutor = async (req, res, next) => {
+  try {
+    const tutor = await prisma.tutor.update({
+      where: { id: req.params.id },
+      data: { isActive: true },
+      include: { language: { select: { nom: true, code: true } } },
+    });
+    res.json(tutor);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getTutors, getTutor, chatWithTutor, requestPronunciation, createTutor, updateTutor, deleteTutor, getAllTutorsAdmin, activateTutor };

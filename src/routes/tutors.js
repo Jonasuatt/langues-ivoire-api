@@ -1,7 +1,9 @@
 const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
-const { getTutors, getTutor, chatWithTutor, requestPronunciation, createTutor, updateTutor, deleteTutor } = require('../controllers/tutorController');
+const { getTutors, getTutor, chatWithTutor, requestPronunciation, createTutor, updateTutor, deleteTutor, getAllTutorsAdmin, activateTutor } = require('../controllers/tutorController');
 
+router.get('/admin/all', authenticate, requireEditor, getAllTutorsAdmin);
+router.patch('/:id/activate', authenticate, requireEditor, activateTutor);
 router.get('/', getTutors);
 router.get('/:id', getTutor);
 router.post('/:id/chat', authenticate, chatWithTutor);
