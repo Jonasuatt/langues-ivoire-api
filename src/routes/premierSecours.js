@@ -23,7 +23,7 @@ router.get('/', async (req, res, next) => {
 // POST /api/premiers-secours (auth requis)
 router.post('/', authenticate, requireEditor, async (req, res, next) => {
   try {
-    const { languageId, situation, consigne, traduction, transcription, audioUrl, imageUrl, genreVoix, priorite } = req.body;
+    const { languageId, situation, consigne, traduction, transcription, audioUrl, audioUrlFr, audioUrlF, audioUrlFrF, imageUrl, genreVoix, priorite } = req.body;
     if (!consigne || !situation) return res.status(400).json({ error: 'consigne et situation requis' });
     const item = await prisma.premierSecoursPhrase.create({
       data: {
@@ -33,6 +33,9 @@ router.post('/', authenticate, requireEditor, async (req, res, next) => {
         traduction: traduction || null,
         transcription: transcription || null,
         audioUrl: audioUrl || null,
+        audioUrlFr: audioUrlFr || null,
+        audioUrlF: audioUrlF || null,
+        audioUrlFrF: audioUrlFrF || null,
         imageUrl: imageUrl || null,
         genreVoix: genreVoix || null,
         priorite: parseInt(priorite) || 0,

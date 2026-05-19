@@ -258,6 +258,8 @@ model UsefulPhrase {
   traduction    String
   audioUrl      String?   // langue locale
   audioUrlFr    String?   // français
+  audioUrlF     String?   // langue locale — locutrice (femme)
+  audioUrlFrF   String?   // français — locutrice (femme)
   categorie     String?   // salutations, commerce, urgence, etc.
   contexte      String?
   genreLocuteur String?   // 'M' | 'F' | null — genre du locuteur audio
@@ -340,6 +342,8 @@ model CulturalItem {
   typeObjet       String?          // type d'objet (TRESOR)
   emoji           String?          // emoji représentatif (TRESOR)
   audioUrlFr      String?          // audio en français
+  audioUrlF       String?          // langue locale — locutrice (femme)
+  audioUrlFrF     String?          // français — locutrice (femme)
   datePublication DateTime         @default(now())
   isActive        Boolean          @default(true)
 
@@ -627,6 +631,8 @@ model PremierSecoursPhrase {
   transcription String?   // Notation phonétique
   audioUrl      String?   // Audio prioritaire (bouton large) — langue locale
   audioUrlFr    String?   // Audio en français
+  audioUrlF     String?   // langue locale — locutrice (femme)
+  audioUrlFrF   String?   // français — locutrice (femme)
   imageUrl      String?   // Schéma illustré universel
   genreVoix     String?   // "M" ou "F"
   priorite      Int       @default(0) // 0=information, 1=important, 2=vital

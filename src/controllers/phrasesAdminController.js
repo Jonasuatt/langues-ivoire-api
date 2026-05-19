@@ -27,7 +27,7 @@ const getPhrases = async (req, res, next) => {
 
 const createPhrase = async (req, res, next) => {
   try {
-    const { languageId, phrase, transcription, traduction, audioUrl, audioUrlFr, categorie, contexte, genreLocuteur, status } = req.body;
+    const { languageId, phrase, transcription, traduction, audioUrl, audioUrlFr, audioUrlF, audioUrlFrF, categorie, contexte, genreLocuteur, status } = req.body;
     if (!languageId || !phrase || !traduction) {
       return res.status(400).json({ error: 'Champs obligatoires : languageId, phrase, traduction' });
     }
@@ -35,6 +35,8 @@ const createPhrase = async (req, res, next) => {
       data: {
         languageId, phrase, transcription, traduction, audioUrl,
         audioUrlFr: audioUrlFr || null,
+        audioUrlF: audioUrlF || null,
+        audioUrlFrF: audioUrlFrF || null,
         categorie: categorie || 'urgence',
         contexte,
         genreLocuteur: genreLocuteur || null,
@@ -51,13 +53,15 @@ const createPhrase = async (req, res, next) => {
 
 const updatePhrase = async (req, res, next) => {
   try {
-    const { phrase, transcription, traduction, audioUrl, audioUrlFr, categorie, contexte, genreLocuteur, status } = req.body;
+    const { phrase, transcription, traduction, audioUrl, audioUrlFr, audioUrlF, audioUrlFrF, categorie, contexte, genreLocuteur, status } = req.body;
     const data = {};
     if (phrase          !== undefined) data.phrase          = phrase;
     if (transcription   !== undefined) data.transcription   = transcription;
     if (traduction      !== undefined) data.traduction      = traduction;
     if (audioUrl        !== undefined) data.audioUrl        = audioUrl;
     if (audioUrlFr      !== undefined) data.audioUrlFr      = audioUrlFr;
+    if (audioUrlF       !== undefined) data.audioUrlF       = audioUrlF    || null;
+    if (audioUrlFrF     !== undefined) data.audioUrlFrF     = audioUrlFrF  || null;
     if (categorie       !== undefined) data.categorie       = categorie;
     if (contexte        !== undefined) data.contexte        = contexte;
     if (genreLocuteur   !== undefined) data.genreLocuteur   = genreLocuteur || null;
