@@ -89,4 +89,35 @@ const updateLanguage = async (req, res, next) => {
   }
 };
 
-module.exports = { getLanguages, getLanguage, createLanguage, updateLanguage };
+const getAllLanguagesAdmin = async (req, res, next) => {
+  try {
+    const languages = await prisma.language.findMany({
+      orderBy: [
+        { isActive: 'desc' },
+        { ordreAffichage: 'asc' },
+        { nom: 'asc' },
+      ],
+      include: {
+        tutors: { select: { nomAvatar: true, imageUrl: true, genre: true } },
+        _count: { select: { lessons: true, dictEntries: { where: { status: 'PUBLISHED' } } } },
+      },
+    });
+    res.json(languages);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const activateLanguage = async (req, res, next) => {
+  try {
+    const language = await prisma.language.update({
+      where: { id: req.params.id },
+      data: { isActive: true },
+    });
+    res.json(language);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getLanguages, getLanguage, createLanguage, updateLanguage, getAllLanguagesAdmin, activateLanguage };
