@@ -159,6 +159,23 @@ const DICTIONARY = {
     { mot: 'Gle', transcription: 'gle', traduction: 'Riz', categorie: 'nourriture' },
     { mot: 'Bâ', transcription: 'bâ', traduction: 'Chasser / Chasse', categorie: 'activites' },
   ],
+  yacouba: [
+    { mot: 'Wɛɛ', transcription: 'wɛɛ', traduction: 'Bonjour (salutation générale)', categorie: 'salutations', exemplePhrase: 'Wɛɛ ! Da a ?' },
+    { mot: 'Da a', transcription: 'da a', traduction: 'Comment vas-tu ?', categorie: 'salutations' },
+    { mot: 'Wɛ ɓa', transcription: 'wɛ ɓa', traduction: 'Bienvenue', categorie: 'salutations' },
+    { mot: 'Ni sɛ', transcription: 'ni sɛ', traduction: 'Merci', categorie: 'salutations' },
+    { mot: 'Ɔɔ', transcription: 'ɔɔ', traduction: 'Oui', categorie: 'expressions' },
+    { mot: 'Aa', transcription: 'aa', traduction: 'Non', categorie: 'expressions' },
+    { mot: 'Yi', transcription: 'yi', traduction: 'Eau', categorie: 'nature' },
+    { mot: 'Kpɔn', transcription: 'kpɔn', traduction: 'Montagne', categorie: 'nature' },
+    { mot: 'Za', transcription: 'za', traduction: 'Forêt', categorie: 'nature' },
+    { mot: 'Gbaa', transcription: 'gbaa', traduction: 'Maison / Habitation', categorie: 'habitat' },
+    { mot: 'To', transcription: 'to', traduction: 'Père', categorie: 'famille' },
+    { mot: 'No', transcription: 'no', traduction: 'Mère', categorie: 'famille' },
+    { mot: 'Ble', transcription: 'ble', traduction: 'Enfant', categorie: 'famille' },
+    { mot: 'Gɔ', transcription: 'gɔ', traduction: 'Je suis arrivé / Salut en entrant', categorie: 'expressions' },
+    { mot: 'Wli', transcription: 'wli', traduction: 'Soleil / Jour', categorie: 'nature' },
+  ],
   nouchi: [
     { mot: 'Wê', transcription: 'wê', traduction: 'Toi / Hey toi (interpellation)', categorie: 'expressions', exemplePhrase: 'Wê, tu viens ?' },
     { mot: 'Yako', transcription: 'yako', traduction: 'Désolé / Condoléances', categorie: 'salutations', exemplePhrase: 'Yako frère !' },
@@ -565,6 +582,35 @@ const LESSONS = {
       ],
     },
   ],
+  yacouba: [
+    {
+      titre: 'Les Salutations en Yacouba',
+      description: 'Découvrez les salutations de la langue Yacouba (Dan) de l\'Ouest montagneux ivoirien.',
+      ordre: 1, niveau: 'A1', pointsXp: 50,
+      steps: [
+        {
+          type: 'VOCABULARY', ordre: 1,
+          contenu: {
+            titre: 'Saluer en Yacouba',
+            mots: [
+              { mot: 'Wɛɛ', traduction: 'Bonjour', transcription: 'wɛɛ' },
+              { mot: 'Wɛ ɓa', traduction: 'Bienvenue', transcription: 'wɛ ɓa' },
+              { mot: 'Ni sɛ', traduction: 'Merci', transcription: 'ni sɛ' },
+              { mot: 'Ɔɔ', traduction: 'Oui', transcription: 'ɔɔ' },
+              { mot: 'Aa', traduction: 'Non', transcription: 'aa' },
+            ],
+          },
+          exercise: {
+            type: 'VOCABULARY',
+            donnees: { question: 'Comment dit-on "Bonjour" en Yacouba ?', choix: ['Wɛ ɓa', 'Ni sɛ', 'Wɛɛ', 'Aa'] },
+            solution: { reponse: 'Wɛɛ' },
+            pointsXp: 15,
+            explication: '"Wɛɛ" est la salutation principale en Yacouba. "Wɛ ɓa" signifie Bienvenue.',
+          },
+        },
+      ],
+    },
+  ],
 };
 
 // ============================================================
@@ -594,6 +640,9 @@ const CULTURAL = [
   // Guéré
   { type: 'PROVERB', code: 'guere', contenu: 'Gbla wê a kpô dɔ, a da yɔ.', traduction: 'Le guerrier qui protège sa maison protège sa mère.', sourceEthnique: 'Guéré' },
   { type: 'TRADITION', code: 'guere', contenu: 'Le Masque Gbè Guéré', traduction: "Masque de guerre sacré porté par les guerriers Guéré. Aujourd'hui utilisé lors des cérémonies rituelles et fêtes traditionnelles.", sourceEthnique: 'Guéré' },
+  // Yacouba
+  { type: 'PROVERB', code: 'yacouba', contenu: 'Kpɔn gbaa wɛ, yi yi wɛ.', traduction: 'La montagne protège la maison, l\'eau nourrit la vie.', sourceEthnique: 'Yacouba (Dan)' },
+  { type: 'TRADITION', code: 'yacouba', contenu: 'Le Masque Glé Yacouba', traduction: 'Masque sacré des Yacouba de l\'Ouest montagneux. Utilisé lors des cérémonies d\'initiation et de réconciliation communautaire dans la région de Man.', sourceEthnique: 'Yacouba (Dan)' },
   // Nouchi
   { type: 'TRADITION', code: 'nouchi', contenu: 'Le Zouglou', traduction: "Genre musical né dans les universités d'Abidjan dans les années 90. Mélange de rythmes traditionnels et de paroles en Nouchi dénonçant les problèmes sociaux.", sourceEthnique: 'Abidjan' },
   { type: 'PROVERB', code: 'nouchi', contenu: "Abidjan c'est Abidjan.", traduction: 'Abidjan est unique en son genre. Expression de fierté des habitants pour leur ville cosmopolite.', sourceEthnique: 'Nouchi / Abidjanais' },

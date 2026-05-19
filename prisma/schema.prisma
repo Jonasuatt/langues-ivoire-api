@@ -164,6 +164,7 @@ model Language {
   textContents    TextContent[]
   imageGalleries  ImageGallery[]
   marcheDialogues MarcheDialogue[]
+  sensMots        SensMot[]
 
   @@map("languages")
 }
@@ -753,5 +754,29 @@ model CivicContent {
   language    Language? @relation(fields: [languageId], references: [id])
 
   @@map("civic_content")
+}
+
+// ==================== SENS DES MOTS ====================
+
+model SensMot {
+  id               String        @id @default(uuid())
+  languageId       String?
+  motSource        String        // Le mot en langue locale
+  transcription    String?       // Notation phonétique
+  audioUrl         String?       // Prononciation native
+  sensHistoriqueFr String        // Traduction française historique (souvent erronée)
+  sensVeritable    String        // Signification culturelle réelle
+  contexteErreur   String?       // Explication de l'origine de la divergence
+  source           String?       // Locuteur natif / institution validatrice
+  status           ContentStatus @default(DRAFT)
+  isActive         Boolean       @default(true)
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  language         Language?     @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, status])
+  @@map("sens_mots")
 }
 

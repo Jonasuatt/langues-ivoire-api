@@ -31,6 +31,7 @@ const civismeRoutes = require('./routes/civisme');
 const textContentRoutes = require('./routes/textContent');
 const imageGalleryRoutes = require('./routes/imageGalleries');
 const marcheDialoguesRoutes = require('./routes/marcheDialogues');
+const sensMotsRoutes = require('./routes/sensMots');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -95,6 +96,7 @@ app.use('/api/civisme', civismeRoutes);
 app.use('/api/text-contents', textContentRoutes);
 app.use('/api/image-galleries', imageGalleryRoutes);
 app.use('/api/marche-dialogues', marcheDialoguesRoutes);
+app.use('/api/sens-mots', sensMotsRoutes);
 
 // Santé
 app.get('/health', (req, res) => {

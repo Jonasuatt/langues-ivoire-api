@@ -20,6 +20,9 @@ const LANGUAGES = [
     description: 'Langue Krou parlée dans la région de l\'ouest près de la frontière libérienne.' },
   { nom: 'Nouchi', code: 'nouchi', famille: 'Argot urbain', region: 'Abidjan & national', locuteurs: 5000000, ordreAffichage: 8, isInMvp: true,
     description: 'Argot urbain né à Abidjan, mélange de langues ivoiriennes, français et autres.' },
+  { nom: 'Yacouba', code: 'yacouba', famille: 'Mande du Sud', region: 'Ouest (Man, Danané, Biankouma)', locuteurs: 500000, ordreAffichage: 9, isInMvp: true,
+    lat: 7.41, lng: -7.55, couleur: '#8B4513', emoji: '🏔️',
+    description: 'Langue Dan (Yacouba) parlée dans l\'Ouest montagneux de la Côte d\'Ivoire, région de Man.' },
 ];
 
 const TUTORS = [
@@ -31,6 +34,8 @@ const TUTORS = [
   { languageCode: 'gouro', nomAvatar: 'Zan Bi', personalite: 'Agriculteur humble, Zan Bi utilise des exemples de la vie quotidienne pour enseigner.' },
   { languageCode: 'guere', nomAvatar: 'Oulahi', personalite: 'Chasseur courageux, Oulahi est direct et enthousiaste dans ses encouragements.' },
   { languageCode: 'nouchi', nomAvatar: 'Pololo', personalite: 'Jeune branchée d\'Abidjan, Pololo est fun et utilise beaucoup d\'expressions contemporaines.' },
+  { languageCode: 'yacouba', nomAvatar: 'Droh', personalite: 'Guide de montagne Yacouba, Droh transmet avec fierté les savoirs et traditions de la région de Man.' },
+  { languageCode: 'yacouba', nomAvatar: 'Zia', genre: 'F', personalite: 'Tisserande et conteuse Yacouba de Danané, Zia enseigne la langue avec douceur et partage les récits des femmes Dan.' },
 ];
 
 const SAMPLE_BADGES = [
@@ -76,23 +81,29 @@ async function main() {
   }
   console.log('✅ 8 langues créées');
 
-  // Tuteurs
+  // Tuteurs — createMany avec skipDuplicates (pas de champ unique composite disponible)
   for (const t of TUTORS) {
     const langId = langueMap[t.languageCode];
     if (!langId) continue;
-    await prisma.tutor.upsert({
-      where: { languageId: langId },
-      update: {},
-      create: {
-        languageId: langId,
-        nomAvatar: t.nomAvatar,
-        personalite: t.personalite,
-        voixConfig: { vitesse: 1.0, pitch: 1.0, langue: t.languageCode },
-        isActive: true,
-      },
+    const existing = await prisma.tutor.findFirst({
+      where: { languageId: langId, nomAvatar: t.nomAvatar },
     });
+    if (!existing) {
+      await prisma.tutor.create({
+        data: {
+          languageId: langId,
+          nomAvatar: t.nomAvatar,
+          genre: t.genre || 'M',
+          personalite: t.personalite,
+          voixConfig: { vitesse: 1.0, pitch: 1.0, langue: t.languageCode },
+          isActive: true,
+        },
+      });
+    } else if (t.genre && existing.genre !== t.genre) {
+      await prisma.tutor.update({ where: { id: existing.id }, data: { genre: t.genre } });
+    }
   }
-  console.log('✅ 8 tuteurs créés');
+  console.log(`✅ ${TUTORS.length} tuteurs créés/vérifiés`);
 
   // Badges
   for (const b of SAMPLE_BADGES) {
@@ -174,6 +185,63 @@ async function main() {
   }
 
   console.log('✅ Données de démonstration créées (leçon + dictionnaire Baoulé)');
+
+  // Sens des Mots — données initiales
+  const SENS_MOTS = [
+    {
+      code: 'dioula',
+      motSource: 'Dô', transcription: 'dɔ',
+      sensHistoriqueFr: 'Case / Maison simple',
+      sensVeritable: 'Lieu sacré de l\'initiation masculine — espace interdit aux non-initiés',
+      contexteErreur: 'Les explorateurs coloniaux ont traduit "dô" par "maison" en voyant une structure fermée, ignorant sa dimension spirituelle et initiatique.',
+      source: 'Institut de Linguistique Appliquée (ILA)',
+    },
+    {
+      code: 'baoule',
+      motSource: 'Blolo', transcription: 'blolo',
+      sensHistoriqueFr: 'Ciel / Paradis',
+      sensVeritable: 'Monde des ancêtres et des doubles spirituels — lieu d\'origine de chaque être humain avant sa naissance',
+      contexteErreur: 'La traduction missionnaire a assimilé "blolo" au paradis chrétien. Pour les Baoulé, c\'est un monde parallèle actif, pas un au-delà.',
+      source: 'Tradition orale Baoulé — validé par locuteurs natifs',
+    },
+    {
+      code: 'senoufo',
+      motSource: 'Poro', transcription: 'poro',
+      sensHistoriqueFr: 'Société secrète / Club d\'hommes',
+      sensVeritable: 'Institution fondamentale d\'éducation et de gouvernance — école de vie, de valeurs et de transmission du savoir ancestral',
+      contexteErreur: 'L\'administration coloniale a réduit le Poro à une "société secrète" jugée subversive, effaçant son rôle central dans l\'organisation sociale Sénoufo.',
+      source: 'Université de Korhogo — département d\'anthropologie',
+    },
+    {
+      code: 'guere',
+      motSource: 'Gbé', transcription: 'gbé',
+      sensHistoriqueFr: 'Fétiche / Objet magique',
+      sensVeritable: 'Force vitale présente dans tout être — principe animiste fondamental liant humains, nature et ancêtres',
+      contexteErreur: 'La réduction coloniale à "fétiche" a dénigré une cosmologie complexe en la résumant à de la superstition.',
+      source: 'ILA — validation communauté Guéré de Duékoué',
+    },
+    {
+      code: 'yacouba',
+      motSource: 'Dan', transcription: 'dan',
+      sensHistoriqueFr: 'Serpent (ordinaire)',
+      sensVeritable: 'Esprit protecteur du clan et de la forêt — être sacré médiateur entre le monde des vivants et celui des ancêtres',
+      contexteErreur: 'Les missionnaires ont traduit littéralement "dan" (serpent en Dan/Yacouba) sans comprendre sa dimension totémique et spirituelle.',
+      source: 'Communauté Dan de Man — validé par chefs coutumiers',
+    },
+  ];
+  let sensMotsCreated = 0;
+  for (const sm of SENS_MOTS) {
+    const langId = langueMap[sm.code];
+    if (!langId) continue;
+    const { code, ...data } = sm;
+    const existing = await prisma.sensMot.findFirst({ where: { languageId: langId, motSource: data.motSource } });
+    if (!existing) {
+      await prisma.sensMot.create({ data: { ...data, languageId: langId, status: 'PUBLISHED', isActive: true } });
+      sensMotsCreated++;
+    }
+  }
+  console.log(`✅ ${sensMotsCreated} fiches Sens des Mots créées`);
+
   console.log('\n🎉 Seed terminé avec succès !');
   console.log('📧 Admin : admin@languesivoire.ci | 🔑 Mot de passe : Admin@2026!');
 }
