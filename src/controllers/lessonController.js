@@ -102,6 +102,45 @@ const submitExercise = async (req, res, next) => {
   }
 };
 
+// ── Admin : toutes les leçons (actives + dormantes) ─────────────────────────
+const getAllLessonsAdmin = async (req, res, next) => {
+  try {
+    const { languageId } = req.query;
+    const where = languageId ? { languageId } : {};
+
+    const lessons = await prisma.lesson.findMany({
+      where,
+      orderBy: [
+        { isActive: 'desc' },
+        { language: { nom: 'asc' } },
+        { niveau: 'asc' },
+        { ordre: 'asc' },
+      ],
+      include: {
+        language: { select: { nom: true, code: true, couleur: true, emoji: true, famille: true } },
+        _count: { select: { steps: true } },
+      },
+    });
+    res.json(lessons);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Activer une leçon dormante ────────────────────────────────────────────────
+const activateLesson = async (req, res, next) => {
+  try {
+    const lesson = await prisma.lesson.update({
+      where: { id: req.params.id },
+      data: { isActive: true },
+      include: { language: { select: { nom: true, code: true } } },
+    });
+    res.json(lesson);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const createLesson = async (req, res, next) => {
   try {
     const lesson = await prisma.lesson.create({ data: req.body });
@@ -127,4 +166,4 @@ const deleteLesson = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getLessonsByLanguage, getLesson, submitExercise, createLesson, updateLesson, deleteLesson };
+module.exports = { getLessonsByLanguage, getLesson, submitExercise, createLesson, updateLesson, deleteLesson, getAllLessonsAdmin, activateLesson };

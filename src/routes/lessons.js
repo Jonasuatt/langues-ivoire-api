@@ -3,8 +3,11 @@ const { authenticate, requireEditor, optionalAuth } = require('../middleware/aut
 const {
   getLessonsByLanguage, getLesson, submitExercise,
   createLesson, updateLesson, deleteLesson,
+  getAllLessonsAdmin, activateLesson,
 } = require('../controllers/lessonController');
 
+router.get('/admin/all', authenticate, requireEditor, getAllLessonsAdmin);
+router.patch('/:id/activate', authenticate, requireEditor, activateLesson);
 router.get('/language/:langue', optionalAuth, getLessonsByLanguage);
 router.get('/:id/steps', optionalAuth, getLesson);
 router.post('/exercises/:id/submit', authenticate, submitExercise);
