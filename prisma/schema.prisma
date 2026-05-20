@@ -407,6 +407,7 @@ model UserProgress {
   lessonId       String
   statut         String   @default("not_started") // not_started, in_progress, completed
   score          Int?
+  xpGained       Int?
   dateCompletion DateTime?
   attempts       Int      @default(0)
 

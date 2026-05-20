@@ -1,6 +1,27 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Grades culturels (synchronisés avec le mobile)
+const GRADES = [
+  { name: "L'Apprenti",              minXp: 0,    icon: '🌱' },
+  { name: 'Le Voyageur',             minXp: 150,  icon: '🚶' },
+  { name: "L'Ambassadeur",           minXp: 400,  icon: '🤝' },
+  { name: 'Le Maître de la Parole',  minXp: 700,  icon: '👑' },
+];
+
+function getGrade(xp) {
+  let grade = GRADES[0];
+  let nextGrade = GRADES[1];
+  for (let i = GRADES.length - 1; i >= 0; i--) {
+    if (xp >= GRADES[i].minXp) {
+      grade = GRADES[i];
+      nextGrade = GRADES[i + 1] || null;
+      break;
+    }
+  }
+  return { grade, nextGrade };
+}
+
 const getUserProgress = async (req, res, next) => {
   try {
     const progress = await prisma.userProgress.findMany({
@@ -14,11 +35,22 @@ const getUserProgress = async (req, res, next) => {
       orderBy: { updatedAt: 'desc' },
     });
 
+    const totalXp = progress
+      .filter(p => p.statut === 'completed')
+      .reduce((sum, p) => sum + (p.xpGained ?? p.lesson.pointsXp ?? 0), 0);
+
+    const { grade, nextGrade } = getGrade(totalXp);
+
     const stats = {
       totalLessons: progress.length,
       completed: progress.filter(p => p.statut === 'completed').length,
-      totalXp: progress.filter(p => p.statut === 'completed').reduce((sum, p) => sum + (p.lesson.pointsXp || 0), 0),
+      totalXp,
       streak: req.user.streak,
+      grade: grade.name,
+      gradeIcon: grade.icon,
+      nextGrade: nextGrade ? nextGrade.name : null,
+      nextGradeXp: nextGrade ? nextGrade.minXp : null,
+      xpToNextGrade: nextGrade ? Math.max(0, nextGrade.minXp - totalXp) : 0,
     };
 
     res.json({ progress, stats });
@@ -35,21 +67,27 @@ const completeLesson = async (req, res, next) => {
     const lesson = await prisma.lesson.findUnique({ where: { id } });
     if (!lesson) return res.status(404).json({ error: 'Leçon non trouvée' });
 
+    // XP proportionnel au score (min 20% même à 0%)
+    const scorePct = Math.max(20, Math.min(100, score ?? 100));
+    const xpGained = Math.round(lesson.pointsXp * scorePct / 100);
+
     const progress = await prisma.userProgress.upsert({
       where: { userId_lessonId: { userId: req.user.id, lessonId: id } },
       create: {
         userId: req.user.id,
         lessonId: id,
         statut: 'completed',
-        score: score || 100,
+        score: scorePct,
         dateCompletion: new Date(),
         attempts: 1,
+        xpGained,
       },
       update: {
         statut: 'completed',
-        score: score || 100,
+        score: scorePct,
         dateCompletion: new Date(),
         attempts: { increment: 1 },
+        xpGained,
       },
     });
 
@@ -69,7 +107,13 @@ const completeLesson = async (req, res, next) => {
     // Vérifier les nouveaux badges
     const newBadges = await checkBadges(req.user.id);
 
-    res.json({ progress, pointsXp: lesson.pointsXp, streak: newStreak, newBadges });
+    res.json({
+      progress,
+      pointsXp: lesson.pointsXp,
+      xpGained,
+      streak: newStreak,
+      newBadges,
+    });
   } catch (err) {
     next(err);
   }
@@ -81,10 +125,10 @@ const checkBadges = async (userId) => {
   const userBadgeIds = new Set(userBadges.map(b => b.badgeId));
   const newBadges = [];
 
-  const completedLessons = await prisma.userProgress.count({
-    where: { userId, statut: 'completed' },
-  });
-  const contributions = await prisma.contribution.count({ where: { userId } });
+  const [completedLessons, contributions] = await Promise.all([
+    prisma.userProgress.count({ where: { userId, statut: 'completed' } }),
+    prisma.contribution.count({ where: { userId } }),
+  ]);
 
   for (const badge of badges) {
     if (userBadgeIds.has(badge.id)) continue;
