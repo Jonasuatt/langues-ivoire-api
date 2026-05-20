@@ -60,6 +60,14 @@ const TUTORS = [
     personalite: 'Gardienne de la forêt, Bleka enseigne avec la sagesse des ancêtres et la force de la nature.',
     voix: { vitesse: 1.0, pitch: 1.1 } },
 
+  // YACOUBA
+  { code: 'yacouba', nom: 'Droh', genre: 'M', image: 'droh.svg',
+    personalite: 'Guide de montagne, Droh transmet avec fierté les savoirs et traditions de la région de Man. Il enseigne avec la sérénité des montagnes de l\'Ouest.',
+    voix: { vitesse: 0.95, pitch: 0.95 } },
+  { code: 'yacouba', nom: 'Zia', genre: 'F', image: 'zia.svg',
+    personalite: 'Femme sage de Danané, Zia enseigne le Yacouba avec douceur et partage les proverbes montagnards avec poésie.',
+    voix: { vitesse: 1.0, pitch: 1.1 } },
+
   // NOUCHI
   { code: 'nouchi', nom: 'Pololo', genre: 'M', image: 'pololo.svg',
     personalite: 'Jeune branché d\'Abidjan, Pololo est fun et utilise beaucoup d\'expressions contemporaines.',

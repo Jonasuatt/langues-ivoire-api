@@ -165,6 +165,8 @@ model Language {
   imageGalleries  ImageGallery[]
   marcheDialogues MarcheDialogue[]
   sensMots        SensMot[]
+  mathContenus    MathContenu[]
+  monnaieContenus MonnaieContenu[]
 
   @@map("languages")
 }
@@ -784,5 +786,85 @@ model SensMot {
 
   @@index([languageId, status])
   @@map("sens_mots")
+}
+
+// ==================== MATHÉMATIQUES ====================
+
+model MathContenu {
+  id          String    @id @default(uuid())
+  languageId  String?
+  type        MathType  // COMPTAGE, ADDITION, SOUSTRACTION, MULTIPLICATION, DIVISION, PAIR_IMPAIR
+  titre       String
+  description String?
+  niveau      String    @default("A1")   // A1, A2, B1
+  contenu     Json      // exercices, questions, réponses (structure flexible)
+  pointsXp    Int       @default(20)
+  ordre       Int       @default(0)
+  isActive    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  language    Language? @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, type])
+  @@map("math_contenus")
+}
+
+// ==================== MONNAIE ====================
+
+model MonnaieContenu {
+  id          String       @id @default(uuid())
+  languageId  String?
+  type        MonnaieType  // RECONNAISSANCE, CALCUL, RENDU_MONNAIE, CONVERSION
+  titre       String
+  description String?
+  contenu     Json         // pièces/billets, montants, exercices visuels
+  pointsXp    Int          @default(20)
+  ordre       Int          @default(0)
+  isActive    Boolean      @default(true)
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  language    Language?    @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, type])
+  @@map("monnaie_contenus")
+}
+
+// ==================== PARTENAIRES / INSTITUTIONS ====================
+
+model Partenaire {
+  id          String    @id @default(uuid())
+  nom         String
+  logoUrl     String?
+  description String?
+  siteWeb     String?
+  categorie   String?   // 'ia', 'institution', 'ong', 'entreprise', 'gouvernement'
+  pays        String?
+  isActive    Boolean   @default(true)
+  ordre       Int       @default(0)  // 0 = premier affiché
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("partenaires")
+}
+
+enum MathType {
+  COMPTAGE
+  ADDITION
+  SOUSTRACTION
+  MULTIPLICATION
+  DIVISION
+  PAIR_IMPAIR
+}
+
+enum MonnaieType {
+  RECONNAISSANCE
+  CALCUL
+  RENDU_MONNAIE
+  CONVERSION
 }
 

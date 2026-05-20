@@ -32,6 +32,9 @@ const textContentRoutes = require('./routes/textContent');
 const imageGalleryRoutes = require('./routes/imageGalleries');
 const marcheDialoguesRoutes = require('./routes/marcheDialogues');
 const sensMotsRoutes = require('./routes/sensMots');
+const mathRoutes = require('./routes/math');
+const monnaieRoutes = require('./routes/monnaie');
+const partenairesRoutes = require('./routes/partenaires');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -97,6 +100,9 @@ app.use('/api/text-contents', textContentRoutes);
 app.use('/api/image-galleries', imageGalleryRoutes);
 app.use('/api/marche-dialogues', marcheDialoguesRoutes);
 app.use('/api/sens-mots', sensMotsRoutes);
+app.use('/api/mathematiques', mathRoutes);
+app.use('/api/monnaie', monnaieRoutes);
+app.use('/api/partenaires', partenairesRoutes);
 
 // Santé
 app.get('/health', (req, res) => {
