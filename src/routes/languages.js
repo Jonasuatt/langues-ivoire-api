@@ -2,12 +2,13 @@ const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
 const {
   getLanguages, getLanguage, createLanguage, updateLanguage,
-  getAllLanguagesAdmin, activateLanguage,
+  getAllLanguagesAdmin, activateLanguage, initFromLanguage,
 } = require('../controllers/languageController');
 
-// IMPORTANT: /admin/all must be declared BEFORE /:id to avoid being captured by the dynamic param
+// IMPORTANT: routes statiques AVANT les routes dynamiques /:id
 router.get('/admin/all', authenticate, requireEditor, getAllLanguagesAdmin);
 router.patch('/:id/activate', authenticate, requireEditor, activateLanguage);
+router.post('/:id/init-from/:sourceId', authenticate, requireEditor, initFromLanguage);
 
 router.get('/', getLanguages);
 router.get('/:id', getLanguage);
