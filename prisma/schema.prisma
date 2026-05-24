@@ -598,7 +598,9 @@ model SupportMessage {
 model SupportReply {
   id        String         @id @default(uuid())
   messageId String
-  adminId   String
+  adminId   String?        // null si réponse utilisateur
+  userId    String?        // null si réponse admin
+  auteur    String         @default("ADMIN")  // 'ADMIN' | 'USER'
   corps     String
   createdAt DateTime       @default(now())
 

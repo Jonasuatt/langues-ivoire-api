@@ -5,7 +5,7 @@ const { createMessage, getMyMessages, getAllMessages, replyMessage, updateStatus
 router.post('/', authenticate, createMessage);
 router.get('/mine', authenticate, getMyMessages);
 router.get('/', authenticate, requireAdmin, getAllMessages);
-router.post('/:id/reply', authenticate, requireAdmin, replyMessage);
+router.post('/:id/reply', authenticate, replyMessage); // admin ou propriétaire du thread
 router.patch('/:id/status', authenticate, requireAdmin, updateStatus);
 
 module.exports = router;

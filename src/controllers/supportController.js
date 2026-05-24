@@ -47,7 +47,7 @@ const getAllMessages = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// Admin : répondre + changer statut
+// Répondre dans un thread — admin OU propriétaire du message
 const replyMessage = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -57,24 +57,40 @@ const replyMessage = async (req, res, next) => {
     const message = await prisma.supportMessage.findUnique({ where: { id } });
     if (!message) return res.status(404).json({ error: 'Message non trouvé' });
 
-    const [reply] = await prisma.$transaction([
-      prisma.supportReply.create({
-        data: { messageId: id, adminId: req.user.id, corps },
-      }),
-      prisma.supportMessage.update({
-        where: { id },
-        data: { statut: statut || 'EN_COURS', updatedAt: new Date() },
-      }),
-    ]);
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'EDITOR'].includes(req.user.role);
+    const isOwner = message.userId === req.user.id;
 
-    // Notifier l'utilisateur
-    await prisma.notification.create({
-      data: {
-        userId: message.userId,
-        type: 'SYSTEM',
-        titre: '💬 Réponse à votre message',
-        corps: `L'équipe Langues Ivoire a répondu à votre message "${message.sujet}". Consultez vos messages dans votre profil.`,
-      },
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
+
+    if (isAdmin) {
+      // Réponse admin : change le statut, notifie l'utilisateur
+      const [reply] = await prisma.$transaction([
+        prisma.supportReply.create({
+          data: { messageId: id, adminId: req.user.id, auteur: 'ADMIN', corps },
+        }),
+        prisma.supportMessage.update({
+          where: { id },
+          data: { statut: statut || 'EN_COURS', updatedAt: new Date() },
+        }),
+      ]);
+
+      await prisma.notification.create({
+        data: {
+          userId: message.userId,
+          type: 'SYSTEM',
+          titre: '💬 Réponse à votre message',
+          corps: `L'équipe Langues Ivoire a répondu à votre message "${message.sujet}". Consultez vos messages dans votre profil.`,
+        },
+      });
+
+      return res.json(reply);
+    }
+
+    // Réponse utilisateur (suivi) : pas de changement de statut
+    const reply = await prisma.supportReply.create({
+      data: { messageId: id, userId: req.user.id, auteur: 'USER', corps },
     });
 
     res.json(reply);
