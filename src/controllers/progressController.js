@@ -35,9 +35,13 @@ const getUserProgress = async (req, res, next) => {
       orderBy: { updatedAt: 'desc' },
     });
 
-    const totalXp = progress
+    const lessonXp = progress
       .filter(p => p.statut === 'completed')
       .reduce((sum, p) => sum + (p.xpGained ?? p.lesson.pointsXp ?? 0), 0);
+
+    // Inclure le bonusXp (jeux, SOS, Marché…)
+    const bonusXp = req.user.bonusXp ?? 0;
+    const totalXp = lessonXp + bonusXp;
 
     const { grade, nextGrade } = getGrade(totalXp);
 
@@ -45,6 +49,7 @@ const getUserProgress = async (req, res, next) => {
       totalLessons: progress.length,
       completed: progress.filter(p => p.statut === 'completed').length,
       totalXp,
+      bonusXp,
       streak: req.user.streak,
       grade: grade.name,
       gradeIcon: grade.icon,
@@ -159,4 +164,27 @@ const getUserBadges = async (req, res, next) => {
   }
 };
 
-module.exports = { getUserProgress, completeLesson, getUserBadges };
+// ── Ajouter du XP hors-leçons (mini-jeux, SOS, Marché…) ─────────────────────
+const addXp = async (req, res, next) => {
+  try {
+    const { xp, source } = req.body;
+    if (!xp || typeof xp !== 'number' || xp <= 0 || xp > 500) {
+      return res.status(400).json({ error: 'xp doit être un entier entre 1 et 500' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        bonusXp: { increment: Math.round(xp) },
+        lastActiveAt: new Date(),
+      },
+      select: { bonusXp: true, streak: true },
+    });
+
+    res.json({ bonusXp: user.bonusXp, source: source || 'unknown' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getUserProgress, completeLesson, getUserBadges, addXp };
