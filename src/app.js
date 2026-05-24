@@ -35,6 +35,7 @@ const sensMotsRoutes = require('./routes/sensMots');
 const mathRoutes = require('./routes/math');
 const monnaieRoutes = require('./routes/monnaie');
 const partenairesRoutes = require('./routes/partenaires');
+const financeContribRoutes = require('./routes/financeContributions');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -103,6 +104,7 @@ app.use('/api/sens-mots', sensMotsRoutes);
 app.use('/api/mathematiques', mathRoutes);
 app.use('/api/monnaie', monnaieRoutes);
 app.use('/api/partenaires', partenairesRoutes);
+app.use('/api/finance', financeContribRoutes);
 
 // Santé
 app.get('/health', (req, res) => {

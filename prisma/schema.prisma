@@ -114,8 +114,9 @@ model User {
   organizationMember  OrganizationMember[]
   audioContributions  AudioContribution[]
   practiceSessions    PracticeSession[]
-  supportMessages     SupportMessage[]
-  certificates        Certificate[]
+  supportMessages       SupportMessage[]
+  certificates          Certificate[]
+  financeContributions  FinanceContribution[]
 
   @@map("users")
 }
@@ -867,5 +868,23 @@ enum MonnaieType {
   CALCUL
   RENDU_MONNAIE
   CONVERSION
+}
+
+model FinanceContribution {
+  id                 String   @id @default(uuid())
+  contributeurNom    String?
+  contributeurEmail  String?
+  montant            Int      // en FCFA
+  objet              String   // 'SOUTIEN_GENERAL', 'PARRAINAGE_LANGUE', etc.
+  methode            String   // 'ORANGE_MONEY', 'MTN_MONEY', 'WAVE', etc.
+  message            String?
+  statut             String   @default("EN_ATTENTE") // 'EN_ATTENTE', 'CONFIRME', 'REJETE'
+  userId             String?
+  user               User?    @relation(fields: [userId], references: [id])
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("finance_contributions")
 }
 
