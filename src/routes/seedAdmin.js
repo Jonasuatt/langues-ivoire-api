@@ -6,7 +6,7 @@
  * GET /api/admin/seed-galleries
  */
 const router = require('express').Router();
-const { authenticate, requireSuperAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -82,7 +82,7 @@ const TRESORS = [
   { sourceEthnique:'agni',    seuilXp:200, emoji:'🏅', titre:'Médaillon pectoral',     typeObjet:'Insigne de noblesse',  matiere:'Or battu et incrusté',        contenu:"Kɔnkɔ, famiɛn mun, asɛndua. Agni ɲɔnna, sran ɔ wla.",                  traduction:"Ce médaillon en or était porté sur la poitrine par les nobles Agni lors des grandes cérémonies.",             imageUrl:`${WK}/5/5c/Akan_gold_weight.jpg/640px-Akan_gold_weight.jpg` },
 ];
 
-router.get('/', authenticate, requireSuperAdmin, async (req, res, next) => {
+router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const results = { galleries: [], tresors: [], skipped: 0 };
 
