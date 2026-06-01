@@ -10,51 +10,52 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const WK = 'https://upload.wikimedia.org/wikipedia/commons/thumb';
-const WC = 'https://upload.wikimedia.org/wikipedia/commons';
+// Picsum Photos — images stables par seed, pas de restriction CORS/hotlink
+const P = (seed, w = 640, h = 430) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
 
+// Endpoint de mise à jour des images existantes (reset + replace URLs)
 const GALLERIES = [
   {
     rubrique: 'animaux',
     titre: "Faune d'Afrique de l'Ouest",
     description: "Animaux sauvages et domestiques présents en Côte d'Ivoire et dans la sous-région.",
-    coverUrl: `${WK}/3/37/African_Bush_Elephant.jpg/640px-African_Bush_Elephant.jpg`,
+    coverUrl: P('elephant-africa', 640, 400),
     images: [
-      { legende: 'Éléphant de savane',    traduction: 'African bush elephant',    imageUrl: `${WK}/3/37/African_Bush_Elephant.jpg/640px-African_Bush_Elephant.jpg` },
-      { legende: "Lion d'Afrique",         traduction: 'African lion',             imageUrl: `${WK}/7/73/Lion_waiting_in_Namibia.jpg/640px-Lion_waiting_in_Namibia.jpg` },
-      { legende: 'Chimpanzé commun',       traduction: 'Common chimpanzee',        imageUrl: `${WK}/4/43/Chimpanzee_seated.jpg/640px-Chimpanzee_seated.jpg` },
-      { legende: 'Hippopotame',            traduction: 'Hippopotamus',             imageUrl: `${WK}/0/00/Hippopotamus_in_Mikumi_National_Park.jpg/640px-Hippopotamus_in_Mikumi_National_Park.jpg` },
-      { legende: 'Crocodile du Nil',       traduction: 'Nile crocodile',           imageUrl: `${WK}/6/68/Crocodylus_niloticus.jpg/640px-Crocodylus_niloticus.jpg` },
-      { legende: 'Perroquet gris',         traduction: 'African grey parrot',      imageUrl: `${WK}/e/e3/Psittacus_erithacus_-perched.jpg/640px-Psittacus_erithacus_-perched.jpg` },
-      { legende: 'Zèbre de Burchell',      traduction: "Burchell's zebra",         imageUrl: `${WK}/e/e3/Plains_Zebra_Equus_quagga.jpg/640px-Plains_Zebra_Equus_quagga.jpg` },
-      { legende: 'Gorille des montagnes',  traduction: 'Mountain gorilla',         imageUrl: `${WK}/0/0e/Gorille_des_plaines.jpg/640px-Gorille_des_plaines.jpg` },
-      { legende: 'Girafe de Nubie',        traduction: 'Nubian giraffe',           imageUrl: `${WK}/b/b2/Giraffe_Mikumi.jpg/640px-Giraffe_Mikumi.jpg` },
+      { legende: 'Éléphant de savane',   traduction: 'African bush elephant', imageUrl: P('elephant',     640, 430) },
+      { legende: "Lion d'Afrique",        traduction: 'African lion',          imageUrl: P('lion-africa',  640, 430) },
+      { legende: 'Chimpanzé commun',      traduction: 'Common chimpanzee',     imageUrl: P('chimpanzee',  640, 430) },
+      { legende: 'Hippopotame',           traduction: 'Hippopotamus',          imageUrl: P('hippo',       640, 430) },
+      { legende: 'Crocodile du Nil',      traduction: 'Nile crocodile',        imageUrl: P('crocodile',   640, 430) },
+      { legende: 'Perroquet gris',        traduction: 'African grey parrot',   imageUrl: P('parrot',      640, 430) },
+      { legende: 'Zèbre',                 traduction: 'Zebra',                 imageUrl: P('zebra',       640, 430) },
+      { legende: 'Gorille',               traduction: 'Gorilla',               imageUrl: P('gorilla',     640, 430) },
+      { legende: 'Girafe',                traduction: 'Giraffe',               imageUrl: P('giraffe',     640, 430) },
     ],
   },
   {
     rubrique: 'artisanat',
     titre: "Artisanat et Masques d'Afrique",
     description: "Objets d'art, masques et textiles traditionnels des peuples d'Afrique de l'Ouest.",
-    coverUrl: `${WK}/f/fd/Mask_Baoule_Louvre_71-1966-54.jpg/480px-Mask_Baoule_Louvre_71-1966-54.jpg`,
+    coverUrl: P('african-mask', 640, 400),
     images: [
-      { legende: 'Masque Baoulé',       traduction: 'Baoulé mask',          imageUrl: `${WK}/f/fd/Mask_Baoule_Louvre_71-1966-54.jpg/480px-Mask_Baoule_Louvre_71-1966-54.jpg` },
-      { legende: 'Tissu Kente',         traduction: 'Kente cloth',          imageUrl: `${WK}/6/6c/GhanaKente.jpg/640px-GhanaKente.jpg` },
-      { legende: 'Sculpture Sénoufo',   traduction: 'Senufo sculpture',     imageUrl: `${WK}/4/4a/Senufo_figure_Louvre_71-1916-60.jpg/480px-Senufo_figure_Louvre_71-1916-60.jpg` },
-      { legende: 'Poterie en argile',   traduction: 'Clay pottery',         imageUrl: `${WK}/9/94/African_Pottery.jpg/640px-African_Pottery.jpg` },
-      { legende: 'Bijou en or Akan',    traduction: 'Akan gold jewellery',  imageUrl: `${WK}/5/5c/Akan_gold_weight.jpg/640px-Akan_gold_weight.jpg` },
+      { legende: 'Masque africain',      traduction: 'African mask',          imageUrl: P('african-mask',   640, 430) },
+      { legende: 'Tissu traditionnel',   traduction: 'Traditional fabric',    imageUrl: P('fabric-pattern', 640, 430) },
+      { legende: 'Sculpture en bois',    traduction: 'Wood sculpture',        imageUrl: P('wood-sculpture', 640, 430) },
+      { legende: 'Poterie en argile',    traduction: 'Clay pottery',          imageUrl: P('pottery',        640, 430) },
+      { legende: 'Bijou traditionnel',   traduction: 'Traditional jewellery', imageUrl: P('jewellery-gold', 640, 430) },
     ],
   },
   {
     rubrique: 'gastronomie',
     titre: 'Gastronomie ivoirienne',
     description: "Plats, ingrédients et scènes culinaires de la cuisine traditionnelle ivoirienne.",
-    coverUrl: `${WK}/e/eb/Cacao-pod-k4600.jpg/640px-Cacao-pod-k4600.jpg`,
+    coverUrl: P('african-food', 640, 400),
     images: [
-      { legende: 'Igname pilée',   traduction: 'Pounded yam',     imageUrl: `${WK}/a/a6/Pounded_yam.jpg/640px-Pounded_yam.jpg` },
-      { legende: 'Banane plantain',traduction: 'Plantain banana', imageUrl: `${WK}/a/ab/Banane_plantain.jpg/640px-Banane_plantain.jpg` },
-      { legende: 'Noix de coco',   traduction: 'Coconut',         imageUrl: `${WK}/f/f2/Coconut_on_white_background.jpg/640px-Coconut_on_white_background.jpg` },
-      { legende: 'Noix de cajou',  traduction: 'Cashew nuts',     imageUrl: `${WK}/e/ef/Cashew_nuts_-_whole_and_halved.jpg/640px-Cashew_nuts_-_whole_and_halved.jpg` },
-      { legende: 'Fève de cacao',  traduction: 'Cocoa pod',       imageUrl: `${WK}/e/eb/Cacao-pod-k4600.jpg/640px-Cacao-pod-k4600.jpg` },
+      { legende: 'Igname pilée',         traduction: 'Pounded yam',           imageUrl: P('yam-food',   640, 430) },
+      { legende: 'Banane plantain',      traduction: 'Plantain banana',       imageUrl: P('plantain',   640, 430) },
+      { legende: 'Noix de coco',         traduction: 'Coconut',               imageUrl: P('coconut',    640, 430) },
+      { legende: 'Noix de cajou',        traduction: 'Cashew nuts',           imageUrl: P('cashew',     640, 430) },
+      { legende: 'Fève de cacao',        traduction: 'Cocoa pod',             imageUrl: P('cacao',      640, 430) },
     ],
   },
 ];
@@ -86,14 +87,20 @@ router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const results = { galleries: [], tresors: [], skipped: 0 };
 
-    // ── Galeries ──────────────────────────────────────────────────────────────
+    // ── Galeries (create ou update) ───────────────────────────────────────────
     for (const [i, gal] of GALLERIES.entries()) {
-      const existing = await prisma.imageGallery.findFirst({ where: { titre: gal.titre } });
-      if (existing) { results.skipped++; continue; }
+      let gallery = await prisma.imageGallery.findFirst({ where: { titre: gal.titre } });
 
-      const gallery = await prisma.imageGallery.create({
-        data: { rubrique: gal.rubrique, titre: gal.titre, description: gal.description, coverUrl: gal.coverUrl, ordre: i, status: 'PUBLISHED' },
-      });
+      if (gallery) {
+        // Mise à jour cover + reset des images (nouvelles URLs)
+        await prisma.imageGallery.update({ where: { id: gallery.id }, data: { coverUrl: gal.coverUrl } });
+        await prisma.galleryImage.deleteMany({ where: { galleryId: gallery.id } });
+      } else {
+        gallery = await prisma.imageGallery.create({
+          data: { rubrique: gal.rubrique, titre: gal.titre, description: gal.description, coverUrl: gal.coverUrl, ordre: i, status: 'PUBLISHED' },
+        });
+      }
+
       for (const [j, img] of gal.images.entries()) {
         await prisma.galleryImage.create({
           data: { galleryId: gallery.id, imageUrl: img.imageUrl, legende: img.legende, traduction: img.traduction, ordre: j + 1 },
