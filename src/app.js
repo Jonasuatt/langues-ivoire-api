@@ -106,6 +106,7 @@ app.use('/api/monnaie', monnaieRoutes);
 app.use('/api/partenaires', partenairesRoutes);
 app.use('/api/finance', financeContribRoutes);
 app.use('/api/admin/seed-galleries', require('./routes/seedAdmin'));
+app.use('/api/validation-committee', require('./routes/validationCommittee'));
 
 // Santé
 app.get('/health', (req, res) => {

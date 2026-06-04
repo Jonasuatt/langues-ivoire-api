@@ -13,8 +13,25 @@ enum Role {
   USER
   CONTRIBUTOR
   EDITOR
+  EXPERT        // Membre du comité scientifique de validation (ILA-UFHB)
   ADMIN
   SUPER_ADMIN
+}
+
+// Statut de certification des contributions audio par le comité
+enum CertificationStatus {
+  SUBMITTED          // Soumis par le locuteur, en attente de review
+  IN_REVIEW          // En cours d'examen par le comité
+  CERTIFIED_ILA      // Certifié (quorum 3/5 atteint) — données de référence
+  REVISION_REQUESTED // Révision demandée par le comité
+  REJECTED           // Rejeté par le comité
+}
+
+// Type de vote d'un expert sur une contribution
+enum ExpertVoteType {
+  APPROVED           // Approuvé
+  REVISION_REQUESTED // Révision demandée
+  REJECTED           // Rejeté
 }
 
 enum ContentStatus {
@@ -117,6 +134,7 @@ model User {
   supportMessages       SupportMessage[]
   certificates          Certificate[]
   financeContributions  FinanceContribution[]
+  expertVotes           ValidationVote[]      // votes du comité scientifique (rôle EXPERT)
 
   @@map("users")
 }
@@ -535,7 +553,7 @@ model AudioContribution {
   transcription String?                     // notation phonétique
   categorie     String?                     // salutations, famille, marché...
   duree         Int?                        // durée en millisecondes
-  isValidated   Boolean   @default(false)   // validé par un éditeur
+  isValidated   Boolean   @default(false)   // validé (rétrocompat — true quand CERTIFIED_ILA)
   validatedBy   String?
   validatedAt   DateTime?
   qualityScore  Float?                      // score qualité 0-5
@@ -546,15 +564,41 @@ model AudioContribution {
   estVoixOfficielle Boolean @default(false)  // enregistrement d'un locuteur officiel
   genreVoix         String?                  // "F" (féminin) ou "M" (masculin)
 
+  // Certification ILA — workflow comité 5 experts (quorum 3/5)
+  certificationStatus CertificationStatus @default(SUBMITTED)
+  certifiedAt         DateTime?            // date de certification ILA
+  certifiedBy         String?              // ID du dernier expert ayant complété le quorum
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   user          User      @relation(fields: [userId], references: [id])
   language      Language  @relation(fields: [languageId], references: [id])
+  validationVotes ValidationVote[]
 
   @@index([languageId, isValidated])
   @@index([mot, languageId])
+  @@index([certificationStatus])
   @@map("audio_contributions")
+}
+
+// Vote d'un membre du comité scientifique sur une contribution audio
+model ValidationVote {
+  id                   String        @id @default(uuid())
+  audioContributionId  String
+  expertId             String        // User avec rôle EXPERT
+  vote                 ExpertVoteType
+  comment              String?       // Commentaire obligatoire si REVISION ou REJECTED
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  audioContribution  AudioContribution @relation(fields: [audioContributionId], references: [id], onDelete: Cascade)
+  expert             User              @relation(fields: [expertId], references: [id])
+
+  @@unique([audioContributionId, expertId])  // 1 vote par expert par contribution
+  @@index([audioContributionId])
+  @@index([expertId])
+  @@map("validation_votes")
 }
 
 // ==================== SESSIONS DE PRATIQUE ====================

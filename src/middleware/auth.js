@@ -42,6 +42,14 @@ const requireEditor = (req, res, next) => {
   next();
 };
 
+// Membres du comité scientifique (EXPERT) + admins
+const requireExpert = (req, res, next) => {
+  if (!req.user || !['EXPERT', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Accès refusé : rôle expert du comité requis' });
+  }
+  next();
+};
+
 const optionalAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -58,4 +66,4 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireAdmin, requireSuperAdmin, requireEditor, optionalAuth };
+module.exports = { authenticate, requireAdmin, requireSuperAdmin, requireEditor, requireExpert, optionalAuth };
