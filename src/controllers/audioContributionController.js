@@ -152,10 +152,11 @@ const bulkImportAudio = async (req, res, next) => {
 // GET /api/audio-contributions — Liste des contributions audio
 const getAudioContributions = async (req, res, next) => {
   try {
-    const { langue, categorie, validated, page = 1, limit = 20 } = req.query;
+    const { langue, categorie, validated, mine, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where = { isActive: true };
+    if (mine === 'true') where.userId = req.user.id;
     if (validated === 'true') where.isValidated = true;
     if (validated === 'false') where.isValidated = false;
     if (categorie) where.categorie = categorie;
