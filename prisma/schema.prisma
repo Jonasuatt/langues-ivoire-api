@@ -98,6 +98,7 @@ model User {
   motDePasseHash      String?
   dateNaissance       DateTime?
   telephone           String?
+  genre               String?   // 'M' | 'F' | 'AUTRE'
   photo               String?
   role                Role      @default(USER)
   isPremium           Boolean   @default(false)

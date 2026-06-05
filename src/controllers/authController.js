@@ -16,7 +16,7 @@ const generateTokens = (userId) => {
 
 const register = async (req, res, next) => {
   try {
-    const { nom, prenom, email, motDePasse, dateNaissance, telephone } = req.body;
+    const { nom, prenom, email, motDePasse, dateNaissance, telephone, genre } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -26,7 +26,7 @@ const register = async (req, res, next) => {
     const motDePasseHash = await bcrypt.hash(motDePasse, 12);
 
     const user = await prisma.user.create({
-      data: { nom, prenom, email, motDePasseHash, dateNaissance, telephone },
+      data: { nom, prenom, email, motDePasseHash, dateNaissance, telephone, genre },
       select: { id: true, nom: true, prenom: true, email: true, role: true, createdAt: true },
     });
 
@@ -84,12 +84,13 @@ const getMe = async (req, res) => {
 
 const updateMe = async (req, res, next) => {
   try {
-    const { nom, prenom, telephone, photo, niveauPref, languesFavorites, notifEnabled, tuteurPref } = req.body;
+    const { nom, prenom, telephone, photo, niveauPref, languesFavorites, notifEnabled, tuteurPref, genre, dateNaissance } = req.body;
     const updated = await prisma.user.update({
       where: { id: req.user.id },
-      data: { nom, prenom, telephone, photo, niveauPref, languesFavorites, notifEnabled, tuteurPref },
+      data: { nom, prenom, telephone, photo, niveauPref, languesFavorites, notifEnabled, tuteurPref, genre, dateNaissance },
       select: { id: true, nom: true, prenom: true, email: true, photo: true, role: true, isPremium: true,
-                niveauPref: true, languesFavorites: true, notifEnabled: true, tuteurPref: true },
+                niveauPref: true, languesFavorites: true, notifEnabled: true, tuteurPref: true,
+                genre: true, dateNaissance: true, telephone: true },
     });
     res.json(updated);
   } catch (err) {

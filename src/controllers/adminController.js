@@ -23,7 +23,9 @@ const getUsers = async (req, res, next) => {
         take: parseInt(limit),
         select: {
           id: true, nom: true, prenom: true, email: true, role: true,
-          isPremium: true, streak: true, createdAt: true, lastActiveAt: true,
+          isPremium: true, streak: true, bonusXp: true, createdAt: true, lastActiveAt: true,
+          telephone: true, dateNaissance: true, genre: true,
+          niveauPref: true, languesFavorites: true, isActive: true,
           _count: { select: { contributions: true, progress: true } },
         },
         orderBy: { createdAt: 'desc' },
