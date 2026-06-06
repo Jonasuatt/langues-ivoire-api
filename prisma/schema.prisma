@@ -135,6 +135,7 @@ model User {
   supportMessages       SupportMessage[]
   certificates          Certificate[]
   financeContributions  FinanceContribution[]
+  depensesCreees        Depense[]             @relation("depensesCreees")
   expertVotes           ValidationVote[]      // votes du comité scientifique (rôle EXPERT)
 
   @@map("users")
@@ -933,5 +934,26 @@ model FinanceContribution {
   updatedAt          DateTime @updatedAt
 
   @@map("finance_contributions")
+}
+
+model Depense {
+  id                String    @id @default(uuid())
+  sujet             String                          // Titre court de la dépense
+  objet             String                          // Catégorie : SALAIRE, INFRASTRUCTURE, MATERIEL, MARKETING, TRANSPORT, ABONNEMENT, AUTRE
+  description       String?                         // Détail optionnel
+  montant           Int                             // en FCFA
+  date              DateTime                        // Date de la dépense
+  statut            String    @default("EN_ATTENTE") // EN_ATTENTE | VALIDEE | REJETEE
+  pieceJointeUrl    String?                         // URL Cloudinary du fichier
+  pieceJointeNom    String?                         // Nom original du fichier
+  pieceJointeType   String?                         // 'pdf', 'image', etc.
+  reference         String?                         // Référence / N° de facture
+  fournisseur       String?                         // Nom du fournisseur / prestataire
+  createdById       String?
+  createdBy         User?     @relation("depensesCreees", fields: [createdById], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("depenses")
 }
 
