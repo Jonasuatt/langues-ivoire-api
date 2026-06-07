@@ -37,6 +37,7 @@ const monnaieRoutes = require('./routes/monnaie');
 const partenairesRoutes = require('./routes/partenaires');
 const financeContribRoutes = require('./routes/financeContributions');
 const depensesRoutes = require('./routes/depenses');
+const repetitorRoutes = require('./routes/repetitor');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -109,6 +110,7 @@ app.use('/api/finance', financeContribRoutes);
 app.use('/api/depenses', depensesRoutes);
 app.use('/api/admin/seed-galleries', require('./routes/seedAdmin'));
 app.use('/api/validation-committee', require('./routes/validationCommittee'));
+app.use('/api/repetitor', repetitorRoutes);
 
 // Santé
 app.get('/health', (req, res) => {

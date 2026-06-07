@@ -957,3 +957,58 @@ model Depense {
   @@map("depenses")
 }
 
+// ==================== RÉPÉTO — COMPAGNON VOCAL ILA ====================
+// Phase 1 : Mode Écho — collecte de corpus audio pour les langues ethniques ivoiriennes
+// Phase 2 (future) : IA de reconnaissance vocale entraînée sur corpus ILA après
+// constitution d'un corpus suffisamment large grâce à nos locuteurs natifs et apprenants.
+
+// Mot configuré dans le jeu RÉPÉTO pour une langue donnée
+model RepetitorMot {
+  id          String   @id @default(uuid())
+  languageId  String
+  languageNom String?  // Cache du nom de la langue
+  mot         String   // Le mot à répéter (en langue locale)
+  traduction  String?  // Traduction française
+  audioUrl    String   // URL de l'audio natif certifié ILA
+  emoji       String?  // Emoji illustratif (🌳, 🐘, 🌊...)
+  categorie   String   @default("general") // general, animaux, nature, famille, couleurs, chiffres
+  niveau      String   @default("debutant") // debutant, intermediaire, avance
+  ordre       Int      @default(0)
+  actif       Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions    RepetitorSession[]
+
+  @@index([languageId, actif])
+  @@map("repetitor_mots")
+}
+
+// Session enregistrée par un apprenant (enfant ou adulte) depuis l'application mobile
+model RepetitorSession {
+  id              String   @id @default(uuid())
+  repetitorMotId  String?  // Référence au mot joué (peut être null si mot supprimé)
+  languageId      String?
+  languageNom     String?  // Cache
+  motCible        String   // Le mot que l'apprenant devait répéter
+  traduction      String?
+  audioNatifUrl   String?  // URL de l'audio natif qui a été joué
+  audioEnfantUrl  String   // URL de l'enregistrement de l'apprenant (Cloudinary)
+  dureeMs         Int?     // Durée de l'enregistrement en millisecondes
+  ageGroupe       String   @default("INCONNU") // INCONNU, MOINS5, 5_8, 9_12, 13_18, ADULTE
+  statut          String   @default("BRUT")    // BRUT, SOUMIS_ILA, ARCHIVE
+  scoreProximite  Float?   // Phase 2 — score de proximité vocale calculé par l'IA
+  deviceId        String?  // Identifiant anonymisé de l'appareil
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  repetitorMot    RepetitorMot? @relation(fields: [repetitorMotId], references: [id], onDelete: SetNull)
+
+  @@index([languageId])
+  @@index([statut])
+  @@index([createdAt])
+  @@map("repetitor_sessions")
+}
+
