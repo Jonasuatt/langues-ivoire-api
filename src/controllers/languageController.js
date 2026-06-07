@@ -3,9 +3,11 @@ const prisma = new PrismaClient();
 
 const getLanguages = async (req, res, next) => {
   try {
-    const { mvpOnly } = req.query;
+    const { mvpOnly, country } = req.query;
     const where = { isActive: true };
     if (mvpOnly === 'true') where.isInMvp = true;
+    // Filtre multi-pays (Phase 5) — ex: ?country=CI ou ?country=ML
+    if (country) where.countryCode = country.toUpperCase();
 
     const languages = await prisma.language.findMany({
       where,

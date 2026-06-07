@@ -160,6 +160,10 @@ model Language {
   traditionalAudioUrl  String?   // URL Cloudinary du son traditionnel (~5s)
   welcomeMessage       String?   // Message lu en TTS à la sélection de langue
 
+  // Multi-pays (Phase 5)
+  countryCode     String?   @default("CI")   // ISO 3166-1 alpha-2 (ex: "CI", "ML", "BF", "SN")
+  countryName     String?   @default("Côte d'Ivoire")  // Nom complet du pays
+
   // Carte géographique
   lat             Float?    // Latitude (ex: 7.54)
   lng             Float?    // Longitude (ex: -5.55)

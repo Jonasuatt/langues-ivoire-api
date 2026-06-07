@@ -38,7 +38,12 @@ const partenairesRoutes = require('./routes/partenaires');
 const financeContribRoutes = require('./routes/financeContributions');
 const depensesRoutes = require('./routes/depenses');
 const repetitorRoutes = require('./routes/repetitor');
+const publicApiRoutes = require('./routes/publicApi');
 const { errorHandler } = require('./middleware/errorHandler');
+
+// Swagger
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 
@@ -112,9 +117,24 @@ app.use('/api/admin/seed-galleries', require('./routes/seedAdmin'));
 app.use('/api/validation-committee', require('./routes/validationCommittee'));
 app.use('/api/repetitor', repetitorRoutes);
 
+// ─── API Publique v1 ────────────────────────────────────────────────────────
+app.use('/api/v1/public', publicApiRoutes);
+
+// ─── Documentation Swagger ─────────────────────────────────────────────────
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'LINGUA Africa — API Docs',
+    customCss: '.swagger-ui .topbar { background-color: #0B3D2E; }',
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
+app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
+
 // Santé
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '1.0.0', project: 'Langues Ivoire' });
+  res.json({ status: 'ok', version: '2.5.0', project: 'LINGUA Africa', docs: '/api-docs' });
 });
 
 // 404
@@ -127,7 +147,8 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Langues Ivoire API démarrée sur le port ${PORT}`);
+  console.log(`🚀 LINGUA Africa API démarrée sur le port ${PORT}`);
+  console.log(`📚 Documentation : http://localhost:${PORT}/api-docs`);
 });
 
 module.exports = app;
