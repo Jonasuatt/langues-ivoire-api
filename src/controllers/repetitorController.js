@@ -55,7 +55,7 @@ const getMots = async (req, res) => {
  */
 const createMot = async (req, res) => {
   try {
-    const { languageId, languageNom, mot, traduction, audioUrl, genreVoix, emoji, categorie, niveau, ordre } = req.body;
+    const { languageId, languageNom, mot, traduction, audioUrl, genreVoix, emoji, imageUrl, categorie, niveau, ordre } = req.body;
     if (!languageId || !mot || !audioUrl) {
       return res.status(400).json({ error: 'languageId, mot et audioUrl sont requis.' });
     }
@@ -69,6 +69,7 @@ const createMot = async (req, res) => {
         audioUrl,
         genreVoix:  genreVoix ?? null,
         emoji:      emoji ?? null,
+        imageUrl:   imageUrl ?? null,
         categorie:  categorie ?? 'general',
         niveau:     niveau ?? 'debutant',
         ordre:      ordre ? parseInt(ordre) : 0,
@@ -90,7 +91,7 @@ const createMot = async (req, res) => {
 const updateMot = async (req, res) => {
   try {
     const { id } = req.params;
-    const { mot, traduction, audioUrl, genreVoix, emoji, categorie, niveau, ordre, actif } = req.body;
+    const { mot, traduction, audioUrl, genreVoix, emoji, imageUrl, categorie, niveau, ordre, actif } = req.body;
 
     const existing = await prisma.repetitorMot.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ error: 'Mot introuvable.' });
@@ -103,6 +104,7 @@ const updateMot = async (req, res) => {
         ...(audioUrl   !== undefined && { audioUrl }),
         ...(genreVoix  !== undefined && { genreVoix: genreVoix || null }),
         ...(emoji      !== undefined && { emoji }),
+        ...(imageUrl   !== undefined && { imageUrl: imageUrl || null }),
         ...(categorie  !== undefined && { categorie }),
         ...(niveau     !== undefined && { niveau }),
         ...(ordre      !== undefined && { ordre: parseInt(ordre) }),
