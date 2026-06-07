@@ -187,4 +187,94 @@ const addXp = async (req, res, next) => {
   }
 };
 
-module.exports = { getUserProgress, completeLesson, getUserBadges, addXp };
+// ── Leaderboard hebdomadaire / global ────────────────────────────────────────
+const getLeaderboard = async (req, res, next) => {
+  try {
+    const { type = 'weekly', limit = 20 } = req.query;
+    const safeLimit = Math.min(50, parseInt(limit) || 20);
+
+    let leaderboard;
+
+    if (type === 'weekly') {
+      // XP gagnés depuis le lundi de la semaine courante
+      const monday = new Date();
+      monday.setDate(monday.getDate() - monday.getDay() + (monday.getDay() === 0 ? -6 : 1));
+      monday.setHours(0, 0, 0, 0);
+
+      // Agréger XP (leçons) + bonusXp de cette semaine via userProgress
+      const weeklyData = await prisma.userProgress.groupBy({
+        by: ['userId'],
+        where: { dateCompletion: { gte: monday }, statut: 'completed' },
+        _sum: { xpGained: true },
+        orderBy: { _sum: { xpGained: 'desc' } },
+        take: safeLimit,
+      });
+
+      // Récupérer les infos utilisateurs
+      const userIds = weeklyData.map(d => d.userId);
+      const users   = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, prenom: true, nom: true, photoUrl: true, bonusXp: true, streak: true },
+      });
+      const usersMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+      // Calcul XP total pour le grade
+      const allProgress = await prisma.userProgress.groupBy({
+        by: ['userId'],
+        where: { userId: { in: userIds }, statut: 'completed' },
+        _sum: { xpGained: true },
+      });
+      const totalXpMap = Object.fromEntries(
+        allProgress.map(d => [d.userId, (d._sum.xpGained || 0) + (usersMap[d.userId]?.bonusXp || 0)])
+      );
+
+      leaderboard = weeklyData
+        .filter(d => usersMap[d.userId])
+        .map(d => ({
+          userId:    d.userId,
+          prenom:    usersMap[d.userId]?.prenom,
+          photoUrl:  usersMap[d.userId]?.photoUrl,
+          weeklyXp:  d._sum.xpGained || 0,
+          totalXp:   totalXpMap[d.userId] || 0,
+          streak:    usersMap[d.userId]?.streak || 0,
+        }));
+    } else {
+      // Global : XP total (leçons + bonus)
+      const progress = await prisma.userProgress.groupBy({
+        by: ['userId'],
+        where: { statut: 'completed' },
+        _sum: { xpGained: true },
+        orderBy: { _sum: { xpGained: 'desc' } },
+        take: safeLimit,
+      });
+
+      const userIds = progress.map(d => d.userId);
+      const users   = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, prenom: true, nom: true, photoUrl: true, bonusXp: true, streak: true },
+      });
+      const usersMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+      const withBonus = progress.map(d => ({
+        userId:   d.userId,
+        totalXp:  (d._sum.xpGained || 0) + (usersMap[d.userId]?.bonusXp || 0),
+        prenom:   usersMap[d.userId]?.prenom,
+        photoUrl: usersMap[d.userId]?.photoUrl,
+        streak:   usersMap[d.userId]?.streak || 0,
+      })).filter(d => d.prenom);
+
+      withBonus.sort((a, b) => b.totalXp - a.totalXp);
+      leaderboard = withBonus;
+    }
+
+    // Trouver le rang de l'utilisateur courant
+    const myRankIdx = leaderboard.findIndex(e => e.userId === req.user.id);
+    const myRank    = myRankIdx >= 0 ? myRankIdx + 1 : null;
+
+    res.json({ leaderboard, myRank, type });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getUserProgress, completeLesson, getUserBadges, addXp, getLeaderboard };
