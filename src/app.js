@@ -111,6 +111,7 @@ app.use('/api/depenses', depensesRoutes);
 app.use('/api/admin/seed-galleries', require('./routes/seedAdmin'));
 app.use('/api/validation-committee', require('./routes/validationCommittee'));
 app.use('/api/repetitor', repetitorRoutes);
+app.use('/api/_seed-repetitor', require('./routes/seedTemp')); // ⚠️ TEMPORAIRE — À SUPPRIMER
 
 // Santé
 app.get('/health', (req, res) => {
