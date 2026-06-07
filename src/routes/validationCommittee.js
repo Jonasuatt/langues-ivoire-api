@@ -10,10 +10,14 @@ const {
   removeVote,
   getSubmissionDetail,
   resetSubmission,
+  getRapport,
 } = require('../controllers/validationCommitteeController');
 
 // Statistiques globales (EXPERT+)
 router.get('/stats', authenticate, requireExpert, getStats);
+
+// Rapport complet du comité (EXPERT+) — doit être avant /:id pour ne pas être capturé par le param
+router.get('/rapport', authenticate, requireExpert, getRapport);
 
 // Liste des soumissions à examiner (EXPERT+)
 router.get('/', authenticate, requireExpert, getSubmissions);

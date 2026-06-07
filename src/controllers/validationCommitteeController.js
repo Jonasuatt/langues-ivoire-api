@@ -272,6 +272,132 @@ const resetSubmission = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/**
+ * GET /api/validation-committee/rapport
+ * Rapport complet du comité ILA filtré par période et langue
+ * Accessible aux experts et admins
+ */
+const getRapport = async (req, res, next) => {
+  try {
+    const { periode = 'tout', langue } = req.query;
+
+    // Calcul de la date de début selon la période
+    let dateGte;
+    const now = new Date();
+    if (periode === 'mois') {
+      dateGte = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (periode === 'trimestre') {
+      const q = Math.floor(now.getMonth() / 3);
+      dateGte = new Date(now.getFullYear(), q * 3, 1);
+    } else if (periode === 'annee') {
+      dateGte = new Date(now.getFullYear(), 0, 1);
+    }
+
+    const dateFilter = dateGte ? { updatedAt: { gte: dateGte } } : {};
+    const langFilter = langue ? { languageId: langue } : {};
+    const whereBase  = { ...langFilter };
+    const wherePeriod = { ...langFilter, ...dateFilter };
+
+    // ── 1. Statistiques globales (période)
+    const [certified, rejected, revision, submitted, inReview] = await Promise.all([
+      prisma.audioContribution.count({ where: { ...wherePeriod, certificationStatus: 'CERTIFIED_ILA' } }),
+      prisma.audioContribution.count({ where: { ...wherePeriod, certificationStatus: 'REJECTED' } }),
+      prisma.audioContribution.count({ where: { ...wherePeriod, certificationStatus: 'REVISION_REQUESTED' } }),
+      prisma.audioContribution.count({ where: { ...whereBase, certificationStatus: 'SUBMITTED' } }),
+      prisma.audioContribution.count({ where: { ...whereBase, certificationStatus: 'IN_REVIEW' } }),
+    ]);
+
+    // ── 2. Contributions certifiées (période)
+    const certifiedList = await prisma.audioContribution.findMany({
+      where: { ...wherePeriod, certificationStatus: 'CERTIFIED_ILA' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      include: {
+        language: { select: { id: true, nom: true } },
+        user:     { select: { id: true, prenom: true, nom: true } },
+        validationVotes: {
+          include: { expert: { select: { id: true, prenom: true, nom: true } } },
+        },
+      },
+    });
+
+    // ── 3. Contributions rejetées (période)
+    const rejectedList = await prisma.audioContribution.findMany({
+      where: { ...wherePeriod, certificationStatus: 'REJECTED' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      include: {
+        language: { select: { id: true, nom: true } },
+        user:     { select: { id: true, prenom: true, nom: true } },
+        validationVotes: {
+          include: { expert: { select: { id: true, prenom: true, nom: true } } },
+        },
+      },
+    });
+
+    // ── 4. Contributions en révision
+    const revisionList = await prisma.audioContribution.findMany({
+      where: { ...whereBase, certificationStatus: 'REVISION_REQUESTED' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      include: {
+        language: { select: { id: true, nom: true } },
+        user:     { select: { id: true, prenom: true, nom: true } },
+        validationVotes: {
+          include: { expert: { select: { id: true, prenom: true, nom: true } } },
+        },
+      },
+    });
+
+    // ── 5. Activité des experts (votes sur la période)
+    const votesOnPeriod = await prisma.validationVote.findMany({
+      where: dateGte ? { createdAt: { gte: dateGte } } : {},
+      include: {
+        expert: { select: { id: true, prenom: true, nom: true } },
+      },
+    });
+
+    // Grouper par expert
+    const expertMap = {};
+    votesOnPeriod.forEach(v => {
+      const key = v.expertId;
+      if (!expertMap[key]) {
+        expertMap[key] = {
+          expert: v.expert,
+          total: 0, approved: 0, revision: 0, rejected: 0,
+        };
+      }
+      expertMap[key].total++;
+      if (v.vote === 'APPROVED')           expertMap[key].approved++;
+      if (v.vote === 'REVISION_REQUESTED') expertMap[key].revision++;
+      if (v.vote === 'REJECTED')           expertMap[key].rejected++;
+    });
+    const expertActivity = Object.values(expertMap)
+      .sort((a, b) => b.total - a.total);
+
+    // ── 6. Répartition par langue (certifiés période)
+    const byLanguage = {};
+    certifiedList.forEach(c => {
+      const nom = c.language?.nom || 'Inconnue';
+      byLanguage[nom] = (byLanguage[nom] || 0) + 1;
+    });
+
+    res.json({
+      periode,
+      generatedAt: new Date().toISOString(),
+      stats: { certified, rejected, revision, submitted, inReview,
+               total: certified + rejected + revision + submitted + inReview },
+      certifiedList,
+      rejectedList,
+      revisionList,
+      expertActivity,
+      byLanguage: Object.entries(byLanguage)
+        .map(([langue, count]) => ({ langue, count }))
+        .sort((a, b) => b.count - a.count),
+    });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getSubmissions,
   getStats,
@@ -279,4 +405,5 @@ module.exports = {
   removeVote,
   getSubmissionDetail,
   resetSubmission,
+  getRapport,
 };
