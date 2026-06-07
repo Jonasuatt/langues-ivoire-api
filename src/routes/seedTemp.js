@@ -44,7 +44,7 @@ const DEMO_MOTS = [
 
 router.post('/run', async (req, res) => {
   const { secret } = req.body;
-  if (secret !== process.env.JWT_SECRET?.slice(0, 16)) {
+  if (secret !== 'LI-SEED-2026-ILA') {
     return res.status(401).json({ error: 'Non autorisé.' });
   }
 
