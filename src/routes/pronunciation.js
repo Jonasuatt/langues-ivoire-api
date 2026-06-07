@@ -5,7 +5,7 @@ const express = require('express');
 const multer  = require('multer');
 const path    = require('path');
 const { authenticate } = require('../middleware/auth');
-const { evaluate, translate } = require('../controllers/pronunciationController');
+const { evaluate, translate, transcribe } = require('../controllers/pronunciationController');
 
 const router = express.Router();
 
@@ -52,5 +52,13 @@ router.post('/evaluate', authenticate, upload.single('audio'), evaluate);
  *   - toLang       : langue cible (ex: "Baoulé" ou "français")
  */
 router.post('/translate', authenticate, translate);
+
+/**
+ * POST /api/pronunciation/transcribe
+ * Mode Perroquet — transcription rapide sans scoring
+ * Body: audio (multipart/form-data)
+ * Returns: { transcript: string | null }
+ */
+router.post('/transcribe', authenticate, upload.single('audio'), transcribe);
 
 module.exports = router;

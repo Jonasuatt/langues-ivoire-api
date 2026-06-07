@@ -211,4 +211,27 @@ Texte : "${text}"`;
   }
 };
 
-module.exports = { evaluate, translate };
+// ─── Transcription simple (mode Perroquet) ────────────────────────────────
+const transcribe = async (req, res, next) => {
+  const filePath = req.file?.path;
+  try {
+    if (!filePath) return res.status(400).json({ error: 'Fichier audio requis' });
+
+    let transcript = null;
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        transcript = await transcribeWithWhisper(filePath, 'fr');
+      } catch (e) {
+        console.error('[Transcribe] Whisper error:', e.message);
+      }
+    }
+
+    res.json({ transcript, whisperAvailable: !!process.env.OPENAI_API_KEY });
+  } catch (err) {
+    next(err);
+  } finally {
+    if (filePath) { try { fs.unlinkSync(filePath); } catch (_) {} }
+  }
+};
+
+module.exports = { evaluate, translate, transcribe };
