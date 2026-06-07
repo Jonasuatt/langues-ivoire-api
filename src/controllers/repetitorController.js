@@ -55,7 +55,7 @@ const getMots = async (req, res) => {
  */
 const createMot = async (req, res) => {
   try {
-    const { languageId, languageNom, mot, traduction, audioUrl, emoji, categorie, niveau, ordre } = req.body;
+    const { languageId, languageNom, mot, traduction, audioUrl, genreVoix, emoji, categorie, niveau, ordre } = req.body;
     if (!languageId || !mot || !audioUrl) {
       return res.status(400).json({ error: 'languageId, mot et audioUrl sont requis.' });
     }
@@ -67,6 +67,7 @@ const createMot = async (req, res) => {
         mot: mot.trim(),
         traduction: traduction?.trim() ?? null,
         audioUrl,
+        genreVoix:  genreVoix ?? null,
         emoji:      emoji ?? null,
         categorie:  categorie ?? 'general',
         niveau:     niveau ?? 'debutant',
@@ -89,7 +90,7 @@ const createMot = async (req, res) => {
 const updateMot = async (req, res) => {
   try {
     const { id } = req.params;
-    const { mot, traduction, audioUrl, emoji, categorie, niveau, ordre, actif } = req.body;
+    const { mot, traduction, audioUrl, genreVoix, emoji, categorie, niveau, ordre, actif } = req.body;
 
     const existing = await prisma.repetitorMot.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ error: 'Mot introuvable.' });
@@ -97,14 +98,15 @@ const updateMot = async (req, res) => {
     const updated = await prisma.repetitorMot.update({
       where: { id },
       data: {
-        ...(mot       !== undefined && { mot: mot.trim() }),
+        ...(mot        !== undefined && { mot: mot.trim() }),
         ...(traduction !== undefined && { traduction: traduction?.trim() ?? null }),
-        ...(audioUrl  !== undefined && { audioUrl }),
-        ...(emoji     !== undefined && { emoji }),
-        ...(categorie !== undefined && { categorie }),
-        ...(niveau    !== undefined && { niveau }),
-        ...(ordre     !== undefined && { ordre: parseInt(ordre) }),
-        ...(actif     !== undefined && { actif }),
+        ...(audioUrl   !== undefined && { audioUrl }),
+        ...(genreVoix  !== undefined && { genreVoix: genreVoix || null }),
+        ...(emoji      !== undefined && { emoji }),
+        ...(categorie  !== undefined && { categorie }),
+        ...(niveau     !== undefined && { niveau }),
+        ...(ordre      !== undefined && { ordre: parseInt(ordre) }),
+        ...(actif      !== undefined && { actif }),
         updatedAt: new Date(),
       },
     });

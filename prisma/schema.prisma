@@ -969,7 +969,8 @@ model RepetitorMot {
   languageNom String?  // Cache du nom de la langue
   mot         String   // Le mot à répéter (en langue locale)
   traduction  String?  // Traduction française
-  audioUrl    String   // URL de l'audio natif certifié ILA
+  audioUrl    String   // URL de l'audio natif certifié ILA (Cloudinary)
+  genreVoix   String?  // "M" (voix masculine) | "F" (voix féminine)
   emoji       String?  // Emoji illustratif (🌳, 🐘, 🌊...)
   categorie   String   @default("general") // general, animaux, nature, famille, couleurs, chiffres
   niveau      String   @default("debutant") // debutant, intermediaire, avance
