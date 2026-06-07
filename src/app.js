@@ -38,7 +38,8 @@ const partenairesRoutes = require('./routes/partenaires');
 const financeContribRoutes = require('./routes/financeContributions');
 const depensesRoutes = require('./routes/depenses');
 const repetitorRoutes = require('./routes/repetitor');
-const publicApiRoutes = require('./routes/publicApi');
+const publicApiRoutes     = require('./routes/publicApi');
+const pronunciationRoutes = require('./routes/pronunciation');
 const { errorHandler } = require('./middleware/errorHandler');
 
 // Swagger
@@ -119,6 +120,9 @@ app.use('/api/repetitor', repetitorRoutes);
 
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
+
+// ─── Prononciation & Traducteur IA (Phase 6) ──────────────────────────────
+app.use('/api/pronunciation', pronunciationRoutes);
 
 // ─── Documentation Swagger ─────────────────────────────────────────────────
 app.use(
