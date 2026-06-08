@@ -84,6 +84,38 @@ Réponds directement en français, sans introduction.`,
   return msg.content[0]?.text?.trim() ?? null;
 }
 
+// ─── Feedback phonétique sans transcription (mode sans Whisper) ───────────
+async function generatePhoneticTips(targetWord, phonetique, langName) {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const client = new Anthropic();
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 250,
+      messages: [{
+        role: 'user',
+        content: `Tu es un professeur de prononciation pour la langue ${langName}.
+Le mot à prononcer est "${targetWord}"${phonetique ? ` (phonétique : ${phonetique})` : ''}.
+Donne 2 conseils concrets et courts pour bien prononcer ce mot en ${langName}.
+Commence par un encouragement. Réponds en français, sans introduction.`,
+      }],
+    });
+    return msg.content[0]?.text?.trim() ?? null;
+  } catch (e) {
+    console.error('[Pronunciation] Claude tips error:', e.message);
+    return null;
+  }
+}
+
+// ─── Score de participation (sans Whisper) ────────────────────────────────
+function participationScore(fileSizeBytes, durationHint) {
+  // Si l'audio a un contenu réel (> 5 Ko), l'utilisateur a bien parlé
+  if (!fileSizeBytes || fileSizeBytes < 2000) return 45; // audio vide
+  if (fileSizeBytes < 10000) return 55;  // très court
+  if (fileSizeBytes < 30000) return 65;  // court (~3s)
+  return 72;                              // bonne durée
+}
+
 // ─── Contrôleur principal ──────────────────────────────────────────────────
 const evaluate = async (req, res, next) => {
   const filePath = req.file?.path;
@@ -95,7 +127,7 @@ const evaluate = async (req, res, next) => {
       return res.status(400).json({ error: 'targetWord requis' });
     }
 
-    // 1. Transcription Whisper
+    // 1. Essai Whisper si clé disponible
     let transcript = null;
     if (filePath && process.env.OPENAI_API_KEY) {
       try {
@@ -105,43 +137,66 @@ const evaluate = async (req, res, next) => {
       }
     }
 
-    // 2. Score phonétique
-    const compareWith = transcript ?? '';
-    const score = transcript ? phoneticScore(compareWith, phonetique || targetWord) : 0;
-    const stars = scoreToStars(score);
+    let score, stars, feedback;
 
-    // 3. Feedback si mauvais score (< 70)
-    let feedback = null;
-    if (transcript && score < 70 && process.env.ANTHROPIC_API_KEY) {
-      try {
-        feedback = await generateFeedback(targetWord, phonetique, transcript, languageName);
-      } catch (e) {
-        console.error('[Pronunciation] Claude feedback error:', e.message);
+    if (transcript) {
+      // ── Mode Whisper : score basé sur la comparaison ──
+      score = phoneticScore(transcript, phonetique || targetWord);
+      stars = scoreToStars(score);
+
+      if (score < 70 && process.env.ANTHROPIC_API_KEY) {
+        try {
+          feedback = await generateFeedback(targetWord, phonetique, transcript, languageName);
+        } catch (e) {
+          console.error('[Pronunciation] Claude feedback error:', e.message);
+        }
       }
-    }
 
-    // Messages par défaut selon les étoiles
-    const defaultMessages = {
-      3: '🌟 Excellent ! Votre prononciation est parfaite !',
-      2: '👍 Bien ! Quelques petits ajustements et ce sera parfait.',
-      1: '💪 Continue à pratiquer, tu y es presque !',
-      0: transcript
-        ? '🎯 Essaie encore — écoute bien la phonétique ci-dessous.'
-        : '⚠️ Aucune voix détectée — parlez plus fort et recommencez.',
-    };
+      const defaultMessages = {
+        3: '🌟 Excellent ! Votre prononciation est parfaite !',
+        2: '👍 Bien ! Quelques petits ajustements et ce sera parfait.',
+        1: '💪 Continue à pratiquer, tu y es presque !',
+        0: '🎯 Essaie encore — écoute bien la phonétique ci-dessous.',
+      };
+      feedback = feedback ?? defaultMessages[stars];
+
+    } else {
+      // ── Mode sans Whisper : score de participation ──
+      const fileSize = req.file?.size ?? 0;
+      score = participationScore(fileSize);
+      stars = scoreToStars(score);
+
+      // Vérifier que l'audio n'est pas vide
+      if (fileSize < 2000) {
+        return res.json({
+          transcript: null,
+          score: 0,
+          stars: 0,
+          feedback: '⚠️ Aucune voix détectée — parlez plus fort et plus près du micro.',
+          whisperAvailable: false,
+          mode: 'participation',
+        });
+      }
+
+      // Générer des conseils phonétiques via Claude
+      const tips = await generatePhoneticTips(targetWord, phonetique, languageName);
+      feedback = tips ??
+        `👏 Bravo ! Vous avez prononcé "${targetWord}". ` +
+        (phonetique ? `Entraînez-vous sur la phonétique : ${phonetique}` : 'Continuez à pratiquer !');
+    }
 
     res.json({
       transcript,
       score,
       stars,
-      feedback: feedback ?? defaultMessages[stars],
+      feedback,
       whisperAvailable: !!process.env.OPENAI_API_KEY,
+      mode: transcript ? 'whisper' : 'participation',
     });
 
   } catch (err) {
     next(err);
   } finally {
-    // Nettoyage du fichier temporaire
     if (filePath) {
       try { fs.unlinkSync(filePath); } catch (_) {}
     }
