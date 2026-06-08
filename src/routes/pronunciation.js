@@ -42,7 +42,7 @@ const upload = multer({
  *   - phonetique   : transcription phonétique (ex: "[akwaba]")
  *   - languageName : nom de la langue (ex: "Baoulé")
  */
-router.post('/evaluate', authenticate, upload.single('audio'), evaluate);
+router.post('/evaluate', upload.single('audio'), evaluate); // Pas d'auth requise — accessible à tous
 
 /**
  * POST /api/pronunciation/translate
@@ -59,6 +59,6 @@ router.post('/translate', translate); // Pas d'auth requise — traduction acces
  * Body: audio (multipart/form-data)
  * Returns: { transcript: string | null }
  */
-router.post('/transcribe', authenticate, upload.single('audio'), transcribe);
+router.post('/transcribe', upload.single('audio'), transcribe); // Pas d'auth requise
 
 module.exports = router;
