@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
 const { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail } = require('../controllers/authController');
-const { sendOtp, verifyOtp, loginWithPhone, registerWithPhone } = require('../controllers/otpController');
+const { sendOtp, verifyOtp, loginWithPhone, loginPhoneDirect, registerWithPhone } = require('../controllers/otpController');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
@@ -49,6 +49,13 @@ router.post('/login-phone',
   ],
   validate,
   loginWithPhone
+);
+
+// Connexion directe par numéro validé (sans OTP)
+router.post('/login-phone-direct',
+  [ body('telephone').notEmpty().withMessage('Numéro requis') ],
+  validate,
+  loginPhoneDirect
 );
 
 router.post('/register-phone',

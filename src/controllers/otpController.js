@@ -205,6 +205,40 @@ const registerWithPhone = async (req, res, next) => {
   }
 };
 
+// ─── 5. Connexion directe par téléphone validé (sans OTP) ────────────────
+const loginPhoneDirect = async (req, res, next) => {
+  try {
+    const telephone = formatPhone(req.body.telephone);
+
+    if (!/^\+\d{8,15}$/.test(telephone)) {
+      return res.status(400).json({ error: 'Numéro de téléphone invalide' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { telephone }, select: { ...USER_SELECT, phoneVerified: true } });
+
+    if (!user) {
+      return res.status(403).json({
+        error: 'Compte non reconnu',
+        notFound: true,
+      });
+    }
+
+    if (!user.phoneVerified) {
+      return res.status(403).json({
+        error: 'Compte non reconnu',
+        notValidated: true,
+      });
+    }
+
+    await prisma.user.update({ where: { telephone }, data: { lastActiveAt: new Date() } });
+
+    const tokens = generateTokens(user.id);
+    res.json({ user, ...tokens });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ─── Helper interne : vérification OTP ────────────────────────────────────
 async function _checkOTP(telephone, code) {
   const otp = await prisma.phoneOTP.findFirst({
@@ -232,4 +266,4 @@ async function _checkOTP(telephone, code) {
   return { ok: true };
 }
 
-module.exports = { sendOtp, verifyOtp, loginWithPhone, registerWithPhone };
+module.exports = { sendOtp, verifyOtp, loginWithPhone, loginPhoneDirect, registerWithPhone };
