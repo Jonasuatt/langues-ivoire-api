@@ -120,4 +120,36 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, refreshToken, getMe, updateMe, changePassword };
+const changeEmail = async (req, res, next) => {
+  try {
+    const { nouvelEmail, motDePasse } = req.body;
+    if (!nouvelEmail || !motDePasse) {
+      return res.status(400).json({ error: 'Nouvel email et mot de passe requis' });
+    }
+    // Vérifier que l'email n'est pas déjà pris
+    const existing = await prisma.user.findUnique({ where: { email: nouvelEmail } });
+    if (existing) {
+      return res.status(409).json({ error: 'Cet email est déjà utilisé par un autre compte' });
+    }
+    // Confirmer le mot de passe actuel
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user.motDePasseHash) {
+      return res.status(400).json({ error: 'Compte sans mot de passe (connexion téléphone uniquement). Définissez un mot de passe d\'abord.' });
+    }
+    const valid = await bcrypt.compare(motDePasse, user.motDePasseHash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Mot de passe incorrect' });
+    }
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { email: nouvelEmail },
+      select: { id: true, nom: true, prenom: true, email: true, role: true, isPremium: true,
+                telephone: true, phoneVerified: true, photo: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail };

@@ -57,6 +57,24 @@ const sendOtp = async (req, res, next) => {
       return res.status(400).json({ error: 'Numéro de téléphone invalide' });
     }
 
+    // Vérifier que ce numéro appartient à un compte validé par l'admin
+    const userCheck = await prisma.user.findUnique({
+      where: { telephone },
+      select: { id: true, phoneVerified: true },
+    });
+    if (!userCheck) {
+      return res.status(403).json({
+        error: 'Aucun compte associé à ce numéro. Inscrivez-vous par email, puis demandez l\'activation via WhatsApp.',
+        notValidated: true,
+      });
+    }
+    if (!userCheck.phoneVerified) {
+      return res.status(403).json({
+        error: 'Ce numéro n\'est pas encore validé. Envoyez un WhatsApp à l\'administrateur pour l\'activer.',
+        notValidated: true,
+      });
+    }
+
     // Anti-spam : max 1 OTP actif toutes les 60 secondes
     const recent = await prisma.phoneOTP.findFirst({
       where: {

@@ -24,7 +24,7 @@ const getUsers = async (req, res, next) => {
         select: {
           id: true, nom: true, prenom: true, email: true, role: true,
           isPremium: true, streak: true, bonusXp: true, createdAt: true, lastActiveAt: true,
-          telephone: true, dateNaissance: true, genre: true,
+          telephone: true, phoneVerified: true, dateNaissance: true, genre: true,
           niveauPref: true, languesFavorites: true, isActive: true,
           _count: { select: { contributions: true, progress: true } },
         },
@@ -41,7 +41,7 @@ const getUsers = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const { role, isPremium, premiumUntil, isActive, newMotDePasse } = req.body;
+    const { role, isPremium, premiumUntil, isActive, newMotDePasse, phoneVerified, telephone } = req.body;
     const requestingRole = req.user.role;
 
     // Charger le compte cible pour vérifier son rôle actuel
@@ -63,6 +63,8 @@ const updateUser = async (req, res, next) => {
     if (isPremium !== undefined) updateData.isPremium = isPremium;
     if (premiumUntil !== undefined) updateData.premiumUntil = premiumUntil;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (phoneVerified !== undefined) updateData.phoneVerified = phoneVerified;
+    if (telephone !== undefined) updateData.telephone = telephone || null;
 
     // Réinitialisation du mot de passe (SUPER_ADMIN uniquement)
     if (newMotDePasse) {
@@ -78,7 +80,7 @@ const updateUser = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: updateData,
-      select: { id: true, nom: true, prenom: true, email: true, role: true, isPremium: true, isActive: true },
+      select: { id: true, nom: true, prenom: true, email: true, role: true, isPremium: true, isActive: true, telephone: true, phoneVerified: true },
     });
     res.json(user);
   } catch (err) {

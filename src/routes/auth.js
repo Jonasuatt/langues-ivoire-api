@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
-const { register, login, refreshToken, getMe, updateMe, changePassword } = require('../controllers/authController');
+const { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail } = require('../controllers/authController');
 const { sendOtp, verifyOtp, loginWithPhone, registerWithPhone } = require('../controllers/otpController');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
@@ -67,5 +67,14 @@ router.post('/refresh', refreshToken);
 router.get('/me', authenticate, getMe);
 router.patch('/me', authenticate, updateMe);
 router.patch('/change-password', authenticate, changePassword);
+router.patch('/change-email',
+  authenticate,
+  [
+    body('nouvelEmail').isEmail().withMessage('Email invalide'),
+    body('motDePasse').notEmpty().withMessage('Mot de passe requis'),
+  ],
+  validate,
+  changeEmail
+);
 
 module.exports = router;
