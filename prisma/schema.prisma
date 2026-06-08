@@ -93,11 +93,12 @@ model User {
   id                  String    @id @default(uuid())
   nom                 String
   prenom              String
-  email               String    @unique
+  email               String?   @unique   // Optionnel si inscription par téléphone
   identifiant         String?   @unique
   motDePasseHash      String?
   dateNaissance       DateTime?
-  telephone           String?
+  telephone           String?   @unique   // Identifiant unique si connexion par tél.
+  phoneVerified       Boolean   @default(false)
   genre               String?   // 'M' | 'F' | 'AUTRE'
   photo               String?
   role                Role      @default(USER)
@@ -139,6 +140,21 @@ model User {
   expertVotes           ValidationVote[]      // votes du comité scientifique (rôle EXPERT)
 
   @@map("users")
+}
+
+// ==================== OTP TÉLÉPHONE ====================
+
+model PhoneOTP {
+  id          String   @id @default(uuid())
+  telephone   String                     // numéro E.164 (ex: +2250708XXXXXX)
+  code        String                     // 6 chiffres
+  expiresAt   DateTime                   // valide 10 minutes
+  used        Boolean  @default(false)
+  attempts    Int      @default(0)       // max 3 tentatives
+  createdAt   DateTime @default(now())
+
+  @@index([telephone])
+  @@map("phone_otps")
 }
 
 // ==================== LANGUES ====================
