@@ -183,7 +183,7 @@ Format JSON : {"traduction": "...", "sens_litteral": "..."}
 Texte : "${text}"`;
 
     const msg = await client.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-haiku-4-5',
       max_tokens: 300,
       messages: [{ role: 'user', content: prompt }],
     });
