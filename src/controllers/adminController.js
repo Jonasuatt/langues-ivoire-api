@@ -82,6 +82,21 @@ const updateUser = async (req, res, next) => {
       data: updateData,
       select: { id: true, nom: true, prenom: true, email: true, role: true, isPremium: true, isActive: true, telephone: true, phoneVerified: true },
     });
+
+    // ── Notification in-app lors de la validation du numéro de téléphone ──────
+    if (phoneVerified === true) {
+      const tel = telephone ?? user.telephone;
+      await prisma.notification.create({
+        data: {
+          userId: req.params.id,
+          type:   'PHONE_VALIDATED',
+          titre:  '📱 Numéro de téléphone activé',
+          corps:  `Votre numéro ${tel ? tel + ' a' : 'a'} été validé par l'administrateur. Vous pouvez désormais vous connecter à l'application avec votre numéro de téléphone.`,
+          data:   { telephone: tel },
+        },
+      });
+    }
+
     res.json(user);
   } catch (err) {
     next(err);

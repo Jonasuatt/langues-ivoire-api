@@ -85,6 +85,7 @@ enum NotificationType {
   CHALLENGE
   CULTURAL_POINT
   STREAK_WARNING
+  PHONE_VALIDATED
 }
 
 // ==================== UTILISATEURS ====================
