@@ -51,7 +51,7 @@ router.post('/evaluate', authenticate, upload.single('audio'), evaluate);
  *   - fromLang     : langue source (ex: "français" ou "Baoulé")
  *   - toLang       : langue cible (ex: "Baoulé" ou "français")
  */
-router.post('/translate', authenticate, translate);
+router.post('/translate', translate); // Pas d'auth requise — traduction accessible à tous
 
 /**
  * POST /api/pronunciation/transcribe
