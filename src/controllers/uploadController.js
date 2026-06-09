@@ -15,11 +15,12 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 Mo max
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 Mo max (pour vidéos)
   fileFilter: (req, file, cb) => {
     const allowedAudio = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/x-wav', 'audio/webm'];
     const allowedImage = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
-    if ([...allowedAudio, ...allowedImage].includes(file.mimetype)) {
+    const allowedVideo = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska', 'video/mpeg'];
+    if ([...allowedAudio, ...allowedImage, ...allowedVideo].includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error(`Type de fichier non supporté: ${file.mimetype}`), false);
@@ -351,4 +352,37 @@ const uploadProfilePhoto = async (req, res, next) => {
   }
 };
 
-module.exports = { upload, uploadAudio, uploadImage, uploadContributeImage, uploadProfilePhoto, bulkUploadAudio, bulkUploadWithMapping };
+// ============================================================
+// 6. Upload d'une vidéo (leçons, dialogues, contexte culturel)
+// ============================================================
+const uploadVideo = async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Aucune vidéo fournie' });
+
+    const { langueCode, contexte } = req.body;
+
+    const result = await uploadToCloudinary(req.file.buffer, {
+      resource_type: 'video',
+      folder: `langues-ivoire/videos/${langueCode || 'general'}`,
+      // Compression automatique Cloudinary
+      eager: [{ quality: 'auto', fetch_format: 'mp4' }],
+      eager_async: true,
+    });
+
+    const videoUrl = result.secure_url;
+
+    res.json({
+      success: true,
+      videoUrl,
+      publicId: result.public_id,
+      duration: result.duration,
+      size:     result.bytes,
+      width:    result.width,
+      height:   result.height,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { upload, uploadAudio, uploadImage, uploadVideo, uploadContributeImage, uploadProfilePhoto, bulkUploadAudio, bulkUploadWithMapping };

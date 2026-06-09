@@ -1,12 +1,15 @@
 const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
-const { upload, uploadAudio, uploadImage, uploadContributeImage, uploadProfilePhoto, bulkUploadAudio, bulkUploadWithMapping } = require('../controllers/uploadController');
+const { upload, uploadAudio, uploadImage, uploadVideo, uploadContributeImage, uploadProfilePhoto, bulkUploadAudio, bulkUploadWithMapping } = require('../controllers/uploadController');
 
 // Upload audio unique
 router.post('/audio', authenticate, requireEditor, upload.single('audio'), uploadAudio);
 
 // Upload image unique (éditeurs)
 router.post('/image', authenticate, requireEditor, upload.single('image'), uploadImage);
+
+// Upload vidéo (leçons, dialogues, contexte culturel) — éditeurs
+router.post('/video', authenticate, requireEditor, upload.single('video'), uploadVideo);
 
 // Upload image pour contribution utilisateur (utilisateurs authentifiés)
 router.post('/contribute-image', authenticate, upload.single('image'), uploadContributeImage);
