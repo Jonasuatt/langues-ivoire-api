@@ -500,6 +500,159 @@ const seedCurriculum = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ==================== PHASE B — EXAMENS COMITÉ ====================
+
+// POST /api/curriculum/enrollments/:languageId/submit-exam
+// L'élève soumet sa demande de passage COMITE (texte + audio optionnel)
+const submitExam = async (req, res, next) => {
+  try {
+    const userId     = req.user.id;
+    const { languageId } = req.params;
+    const { textContent, audioUrl } = req.body;
+
+    if (!textContent && !audioUrl) {
+      return res.status(400).json({ error: 'Fournissez un texte ou un enregistrement audio.' });
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_languageId: { userId, languageId } },
+      include: { gradeLevel: true },
+    });
+    if (!enrollment) return res.status(404).json({ error: 'Cursus introuvable.' });
+    if (enrollment.gradeLevel.passageMode !== 'COMITE') {
+      return res.status(400).json({ error: 'Ce niveau utilise le passage automatique, pas le comité.' });
+    }
+
+    // Une seule demande PENDING ou IN_REVIEW à la fois
+    const existing = await prisma.examSubmission.findFirst({
+      where: { userId, languageId, gradeLevelId: enrollment.gradeLevelId, status: { in: ['PENDING', 'IN_REVIEW'] } },
+    });
+    if (existing) return res.status(409).json({ error: 'Une demande est déjà en cours d\'examen.' });
+
+    const exam = await prisma.examSubmission.create({
+      data: { userId, languageId, enrollmentId: enrollment.id, gradeLevelId: enrollment.gradeLevelId, textContent, audioUrl },
+    });
+    res.status(201).json({ success: true, exam });
+  } catch (err) { next(err); }
+};
+
+// GET /api/curriculum/enrollments/:languageId/exam-status
+// L'élève consulte le statut de sa dernière demande
+const getExamStatus = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { languageId } = req.params;
+    const exam = await prisma.examSubmission.findFirst({
+      where: { userId, languageId },
+      orderBy: { createdAt: 'desc' },
+      include: { gradeLevel: { select: { nom: true, cycle: true } } },
+    });
+    res.json({ exam });
+  } catch (err) { next(err); }
+};
+
+// GET /api/curriculum/admin/exams
+// Comité : liste des demandes (filtrées par status, languageId, gradeLevelId)
+const listExams = async (req, res, next) => {
+  try {
+    const { status, languageId, gradeLevelId, page = 1, limit = 30 } = req.query;
+    const where = {};
+    if (status)       where.status       = status;
+    if (languageId)   where.languageId   = languageId;
+    if (gradeLevelId) where.gradeLevelId = gradeLevelId;
+
+    const [items, total] = await Promise.all([
+      prisma.examSubmission.findMany({
+        where,
+        orderBy: { createdAt: 'asc' },
+        skip: (page - 1) * limit,
+        take: Number(limit),
+        include: {
+          user:       { select: { id: true, nom: true, prenom: true, photo: true } },
+          language:   { select: { id: true, nom: true, code: true } },
+          gradeLevel: { select: { id: true, nom: true, cycle: true } },
+          reviewer:   { select: { id: true, nom: true, prenom: true } },
+        },
+      }),
+      prisma.examSubmission.count({ where }),
+    ]);
+    res.json({ items, total, page: Number(page), limit: Number(limit) });
+  } catch (err) { next(err); }
+};
+
+// POST /api/curriculum/admin/exams/:id/review
+// Comité : approuver ou rejeter une demande
+const reviewExam = async (req, res, next) => {
+  try {
+    const reviewerId = req.user.id;
+    const { id }     = req.params;
+    const { decision, commentaire } = req.body; // decision: 'APPROVED' | 'REJECTED'
+
+    if (!['APPROVED', 'REJECTED'].includes(decision)) {
+      return res.status(400).json({ error: "Decision doit être 'APPROVED' ou 'REJECTED'." });
+    }
+
+    const exam = await prisma.examSubmission.findUnique({
+      where: { id },
+      include: { enrollment: { include: { gradeLevel: true } } },
+    });
+    if (!exam) return res.status(404).json({ error: 'Demande introuvable.' });
+    if (['APPROVED', 'REJECTED'].includes(exam.status)) {
+      return res.status(409).json({ error: 'Cette demande a déjà été traitée.' });
+    }
+
+    // Mettre à jour le statut de la demande
+    const updated = await prisma.examSubmission.update({
+      where: { id },
+      data: { status: decision, reviewedBy: reviewerId, commentaire, reviewedAt: new Date() },
+    });
+
+    // Si approuvé → passer la classe dans l'enrollment
+    if (decision === 'APPROVED') {
+      const enrollment   = exam.enrollment;
+      const currentGrade = enrollment.gradeLevel;
+
+      // Trouver la classe suivante
+      const nextGrade = await prisma.gradeLevel.findFirst({
+        where: { ordre: { gt: currentGrade.ordre }, isActive: true },
+        orderBy: { ordre: 'asc' },
+      });
+
+      // Enregistrer dans le livret
+      await prisma.enrollmentHistory.create({
+        data: {
+          enrollmentId:  enrollment.id,
+          gradeLevelId:  currentGrade.id,
+          passageMode:   'COMITE',
+          decidedBy:     reviewerId,
+        },
+      });
+
+      if (nextGrade) {
+        await prisma.enrollment.update({
+          where: { id: enrollment.id },
+          data:  { gradeLevelId: nextGrade.id, moyenneGlobale: 0 },
+        });
+      }
+    }
+
+    res.json({ success: true, exam: updated });
+  } catch (err) { next(err); }
+};
+
+// PATCH /api/curriculum/admin/exams/:id/take
+// Comité : prendre en charge une demande (passe en IN_REVIEW)
+const takeExam = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const exam = await prisma.examSubmission.update({
+      where: { id },
+      data: { status: 'IN_REVIEW', reviewedBy: req.user.id },
+    });
+    res.json({ success: true, exam });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getGrades, getModules,
   getPlacementTest, submitPlacementTest,
@@ -507,4 +660,6 @@ module.exports = {
   updateGrade, updateModule, assignLessonGrade, getStats,
   listPlacementQuestions, createPlacementQuestion, updatePlacementQuestion, deletePlacementQuestion,
   seedCurriculum,
+  // Phase B
+  submitExam, getExamStatus, listExams, reviewExam, takeExam,
 };

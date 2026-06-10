@@ -7,6 +7,8 @@ const {
   updateGrade, updateModule, assignLessonGrade, getStats,
   listPlacementQuestions, createPlacementQuestion, updatePlacementQuestion, deletePlacementQuestion,
   seedCurriculum,
+  // Phase B
+  submitExam, getExamStatus, listExams, reviewExam, takeExam,
 } = require('../controllers/curriculumController');
 
 // ----- Référentiel (élève) -----
@@ -22,6 +24,10 @@ router.get('/enrollments', authenticate, getMyEnrollments);
 router.get('/enrollments/:languageId', authenticate, getEnrollmentDetail);
 router.post('/enrollments/:languageId/check-progression', authenticate, checkProgression);
 
+// ----- Phase B : Examens charnières (élève) -----
+router.post('/enrollments/:languageId/submit-exam', authenticate, submitExam);
+router.get('/enrollments/:languageId/exam-status', authenticate, getExamStatus);
+
 // ----- Administration (CMS) -----
 router.put('/admin/grades/:id', authenticate, requireAdmin, updateGrade);
 router.put('/admin/modules/:id', authenticate, requireAdmin, updateModule);
@@ -32,5 +38,10 @@ router.post('/admin/placement-questions', authenticate, requireAdmin, createPlac
 router.put('/admin/placement-questions/:id', authenticate, requireAdmin, updatePlacementQuestion);
 router.delete('/admin/placement-questions/:id', authenticate, requireAdmin, deletePlacementQuestion);
 router.post('/admin/seed', authenticate, requireAdmin, seedCurriculum);
+
+// ----- Phase B : Examens (comité d'experts) -----
+router.get('/admin/exams', authenticate, requireAdmin, listExams);
+router.patch('/admin/exams/:id/take', authenticate, requireAdmin, takeExam);
+router.post('/admin/exams/:id/review', authenticate, requireAdmin, reviewExam);
 
 module.exports = router;
