@@ -7,6 +7,7 @@
  * - Les paliers COMITE (CM2→6ème, 3ème→2nde, lycée…) sont gérés en Phase B
  */
 const { PrismaClient } = require('@prisma/client');
+const { notifyUser } = require('../utils/notify');
 const prisma = new PrismaClient();
 
 // Ordre minimal dans la langue principale pour débloquer une 2ème langue
@@ -330,6 +331,16 @@ const checkProgression = async (req, res, next) => {
       }),
     ]);
 
+    // Notifier l'élève du passage de classe
+    await notifyUser(
+      prisma,
+      req.user.id,
+      'PASSAGE_CLASSE',
+      '🎓 Passage de classe !',
+      `Félicitations ! Vous passez de ${enrollment.gradeLevel.nom} en ${nextGrade.nom}.`,
+      { fromGrade: enrollment.gradeLevel.nom, toGrade: nextGrade.nom },
+    );
+
     res.json({
       promoted: true,
       from: { code: enrollment.gradeLevel.code, nom: enrollment.gradeLevel.nom },
@@ -607,11 +618,11 @@ const reviewExam = async (req, res, next) => {
       data: { status: decision, reviewedBy: reviewerId, commentaire, reviewedAt: new Date() },
     });
 
+    const enrollment   = exam.enrollment;
+    const currentGrade = enrollment.gradeLevel;
+
     // Si approuvé → passer la classe dans l'enrollment
     if (decision === 'APPROVED') {
-      const enrollment   = exam.enrollment;
-      const currentGrade = enrollment.gradeLevel;
-
       // Trouver la classe suivante
       const nextGrade = await prisma.gradeLevel.findFirst({
         where: { ordre: { gt: currentGrade.ordre }, isActive: true },
@@ -633,7 +644,25 @@ const reviewExam = async (req, res, next) => {
           where: { id: enrollment.id },
           data:  { gradeLevelId: nextGrade.id, moyenneGlobale: 0 },
         });
+        await notifyUser(
+          prisma,
+          enrollment.userId,
+          'PASSAGE_CLASSE',
+          '🎓 Passage validé par le comité !',
+          `Le comité d'experts a approuvé votre passage de ${currentGrade.nom} en ${nextGrade.nom}. Félicitations !`,
+          { fromGrade: currentGrade.nom, toGrade: nextGrade.nom },
+        );
       }
+    } else {
+      // Refusé — notifier l'élève
+      await notifyUser(
+        prisma,
+        enrollment.userId,
+        'EXAMEN_REFUSE',
+        '📝 Examen non validé',
+        `Le comité n'a pas validé votre passage de ${currentGrade.nom}. ${commentaire ? `Commentaire : ${commentaire}` : 'Continuez vos leçons et réessayez.'}`,
+        { gradeNom: currentGrade.nom, commentaire: commentaire ?? null },
+      );
     }
 
     res.json({ success: true, exam: updated });

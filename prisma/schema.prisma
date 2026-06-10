@@ -86,6 +86,10 @@ enum NotificationType {
   CULTURAL_POINT
   STREAK_WARNING
   PHONE_VALIDATED
+  // Cursus scolaire (Phase D)
+  BULLETIN_VALIDE
+  PASSAGE_CLASSE
+  EXAMEN_REFUSE
 }
 
 // ==================== UTILISATEURS ====================

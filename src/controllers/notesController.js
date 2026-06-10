@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { v4: uuidv4 } = require('uuid');
+const { notifyUser } = require('../utils/notify');
 
 const prisma = new PrismaClient();
 
@@ -248,8 +249,21 @@ async function validateBulletin(req, res) {
         ...(observations !== undefined && { observations }),
         ...(pdfUrl       !== undefined && { pdfUrl }),
       },
-      include: { gradeLevel: true, enrollment: { include: { user: { select: { nom: true, prenom: true } } } } },
+      include: {
+        gradeLevel: true,
+        enrollment: { select: { userId: true } },
+      },
     });
+
+    // Notifier l'élève
+    await notifyUser(
+      prisma,
+      bulletin.enrollment.userId,
+      'BULLETIN_VALIDE',
+      '📋 Bulletin disponible',
+      `Votre bulletin du ${bulletin.trimestre.replace('T', 'Trimestre ')} ${bulletin.annee} est validé. Code : ${bulletin.codeVerification ?? '—'}`,
+      { bulletinId: bulletin.id, trimestre: bulletin.trimestre, annee: bulletin.annee },
+    );
 
     res.json({ bulletin });
   } catch (err) {
