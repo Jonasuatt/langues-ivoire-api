@@ -155,6 +155,51 @@ async function getBulletins(req, res) {
 }
 
 // --------------------------------------------------------------------------
+// Helper interne : calcule et upsert le bulletin d'une inscription.
+// Retourne { bulletin, nbNotes }.
+// --------------------------------------------------------------------------
+async function _computeAndUpsertBulletin(enrollmentId, trimestre, annee, gradeLevelId) {
+  const notes = await prisma.noteLecon.findMany({
+    where: { enrollmentId, trimestre, annee },
+    include: { lesson: { select: { pilier: true } } },
+  });
+
+  const byPilier = { LANGUE_COMMUNICATION: [], CULTURE_CITOYENNETE: [], PRATIQUE_METIERS: [] };
+  for (const n of notes) {
+    if (n.lesson.pilier && byPilier[n.lesson.pilier]) {
+      byPilier[n.lesson.pilier].push(n.note);
+    }
+  }
+
+  const avg = (arr) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
+  const moyenneLangue   = avg(byPilier.LANGUE_COMMUNICATION);
+  const moyenneCulture  = avg(byPilier.CULTURE_CITOYENNETE);
+  const moyennePratique = avg(byPilier.PRATIQUE_METIERS);
+
+  const valides = [moyenneLangue, moyenneCulture, moyennePratique].filter((v) => v !== null);
+  const moyenneGenerale = valides.length
+    ? Math.round((valides.reduce((s, v) => s + v, 0) / valides.length) * 10) / 10
+    : null;
+  const mention = moyenneGenerale !== null ? getMention(moyenneGenerale) : null;
+
+  const bulletin = await prisma.bulletin.upsert({
+    where: { enrollmentId_trimestre_annee: { enrollmentId, trimestre, annee } },
+    create: {
+      enrollmentId, gradeLevelId, trimestre, annee,
+      moyenneLangue, moyenneCulture, moyennePratique, moyenneGenerale, mention,
+      codeVerification: genCode(annee, trimestre),
+    },
+    update: {
+      gradeLevelId, moyenneLangue, moyenneCulture, moyennePratique, moyenneGenerale, mention,
+      validatedBy: null, validatedAt: null, pdfUrl: null,
+    },
+    include: { gradeLevel: true },
+  });
+
+  return { bulletin, nbNotes: notes.length };
+}
+
+// --------------------------------------------------------------------------
 // POST /api/notes/admin/bulletin  (admin)
 // Génère un bulletin trimestriel à partir des NoteLecon existantes.
 // Body: { enrollmentId, trimestre, annee }
@@ -172,61 +217,61 @@ async function generateBulletin(req, res) {
     });
     if (!enrollment) return res.status(404).json({ error: 'Inscription non trouvée.' });
 
-    // Notes du trimestre demandé
-    const notes = await prisma.noteLecon.findMany({
-      where: { enrollmentId, trimestre, annee },
-      include: { lesson: { select: { pilier: true } } },
+    const { bulletin, nbNotes } = await _computeAndUpsertBulletin(
+      enrollmentId, trimestre, parseInt(annee), enrollment.gradeLevelId,
+    );
+
+    res.json({ bulletin, eleve: enrollment.user, nbNotes });
+  } catch (err) {
+    console.error('generateBulletin:', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+}
+
+// --------------------------------------------------------------------------
+// POST /api/notes/admin/bulletins/batch  (admin)
+// Génère les bulletins de TOUTES les inscriptions actives pour un trimestre.
+// Body: { trimestre, annee, force? }
+//   force=false (défaut) : ignore les bulletins déjà existants
+//   force=true           : recalcule même les bulletins déjà générés (non validés)
+// --------------------------------------------------------------------------
+async function generateBulletinBatch(req, res) {
+  try {
+    const { trimestre, annee, force = false } = req.body;
+    if (!trimestre || !annee) {
+      return res.status(400).json({ error: 'trimestre et annee requis.' });
+    }
+    const anneeInt = parseInt(annee);
+
+    const enrollments = await prisma.enrollment.findMany({
+      select: { id: true, gradeLevelId: true },
     });
 
-    // Moyennes par pilier
-    const byPilier = { LANGUE_COMMUNICATION: [], CULTURE_CITOYENNETE: [], PRATIQUE_METIERS: [] };
-    for (const n of notes) {
-      if (n.lesson.pilier && byPilier[n.lesson.pilier]) {
-        byPilier[n.lesson.pilier].push(n.note);
+    // Si pas force, on exclut les inscriptions qui ont déjà un bulletin validé
+    const existingValidated = force ? new Set() : new Set(
+      (await prisma.bulletin.findMany({
+        where: { trimestre, annee: anneeInt, validatedAt: { not: null } },
+        select: { enrollmentId: true },
+      })).map(b => b.enrollmentId)
+    );
+
+    let generated = 0;
+    let skipped   = 0;
+    let errors    = 0;
+
+    for (const e of enrollments) {
+      if (existingValidated.has(e.id)) { skipped++; continue; }
+      try {
+        await _computeAndUpsertBulletin(e.id, trimestre, anneeInt, e.gradeLevelId);
+        generated++;
+      } catch {
+        errors++;
       }
     }
 
-    const avg = (arr) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
-    const moyenneLangue    = avg(byPilier.LANGUE_COMMUNICATION);
-    const moyenneCulture   = avg(byPilier.CULTURE_CITOYENNETE);
-    const moyennePratique  = avg(byPilier.PRATIQUE_METIERS);
-
-    const valides = [moyenneLangue, moyenneCulture, moyennePratique].filter((v) => v !== null);
-    const moyenneGenerale  = valides.length ? Math.round((valides.reduce((s, v) => s + v, 0) / valides.length) * 10) / 10 : null;
-    const mention          = moyenneGenerale !== null ? getMention(moyenneGenerale) : null;
-
-    // Upsert — si le bulletin existe déjà on le recalcule
-    const bulletin = await prisma.bulletin.upsert({
-      where: { enrollmentId_trimestre_annee: { enrollmentId, trimestre, annee } },
-      create: {
-        enrollmentId,
-        gradeLevelId: enrollment.gradeLevelId,
-        trimestre,
-        annee,
-        moyenneLangue,
-        moyenneCulture,
-        moyennePratique,
-        moyenneGenerale,
-        mention,
-        codeVerification: genCode(annee, trimestre),
-      },
-      update: {
-        gradeLevelId:   enrollment.gradeLevelId,
-        moyenneLangue,
-        moyenneCulture,
-        moyennePratique,
-        moyenneGenerale,
-        mention,
-        validatedBy: null,
-        validatedAt: null,
-        pdfUrl: null,
-      },
-      include: { gradeLevel: true },
-    });
-
-    res.json({ bulletin, eleve: enrollment.user, nbNotes: notes.length });
+    res.json({ generated, skipped, errors, total: enrollments.length });
   } catch (err) {
-    console.error('generateBulletin:', err);
+    console.error('generateBulletinBatch:', err);
     res.status(500).json({ error: 'Erreur serveur.' });
   }
 }
@@ -366,6 +411,7 @@ module.exports = {
   getCahierNotes,
   getBulletins,
   generateBulletin,
+  generateBulletinBatch,
   validateBulletin,
   listBulletinsAdmin,
   verifyBulletin,
