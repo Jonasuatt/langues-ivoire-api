@@ -699,6 +699,64 @@ const listEnrollmentsAdmin = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// POST /api/curriculum/admin/seed-content — contenu démo (Phase K)
+// Assigne les leçons actives sans classe à CP1, CP2, CE1 (4 leçons par classe par langue).
+const seedContent = async (req, res, next) => {
+  try {
+    const LECONS_PAR_CLASSE = 4;
+    const PILIERS = ['LANGUE_COMMUNICATION', 'CULTURE_CITOYENNETE', 'PRATIQUE_METIERS'];
+    const GRADES_CIBLES = ['CP1', 'CP2', 'CE1'];
+
+    const grades = await prisma.gradeLevel.findMany({
+      where: { code: { in: GRADES_CIBLES } },
+      orderBy: { ordre: 'asc' },
+    });
+    if (grades.length === 0) return res.status(404).json({ error: 'Classes CP1/CP2/CE1 introuvables. Initialisez d\'abord le cursus.' });
+
+    const languages = await prisma.language.findMany({ where: { isActive: true } });
+    let totalAssigned = 0;
+    const detail = [];
+
+    for (const lang of languages) {
+      const lecons = await prisma.lesson.findMany({
+        where: { languageId: lang.id, isActive: true, gradeLevelId: null },
+        orderBy: { ordre: 'asc' },
+      });
+      if (lecons.length === 0) continue;
+
+      let idx = 0;
+      for (const grade of grades) {
+        const tranche = lecons.slice(idx, idx + LECONS_PAR_CLASSE);
+        if (tranche.length === 0) break;
+        for (let i = 0; i < tranche.length; i++) {
+          await prisma.lesson.update({
+            where: { id: tranche[i].id },
+            data: { gradeLevelId: grade.id, pilier: PILIERS[i % PILIERS.length], isObligatoire: true },
+          });
+        }
+        detail.push({ langue: lang.nom, classe: grade.nom, count: tranche.length });
+        totalAssigned += tranche.length;
+        idx += LECONS_PAR_CLASSE;
+        if (idx >= lecons.length) break;
+      }
+    }
+
+    res.json({ success: true, totalAssigned, detail });
+  } catch (err) { next(err); }
+};
+
+// POST /api/curriculum/admin/reset-content — supprime le contenu démo (Phase K)
+// Retire toutes les assignations de classe sur les leçons (gradeLevelId → null).
+const resetContent = async (req, res, next) => {
+  try {
+    const { count } = await prisma.lesson.updateMany({
+      where: { gradeLevelId: { not: null } },
+      data: { gradeLevelId: null, pilier: null, isObligatoire: false },
+    });
+    res.json({ success: true, resetCount: count });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getGrades, getModules,
   getPlacementTest, submitPlacementTest,
@@ -707,6 +765,8 @@ module.exports = {
   listPlacementQuestions, createPlacementQuestion, updatePlacementQuestion, deletePlacementQuestion,
   seedCurriculum,
   listEnrollmentsAdmin,
+  seedContent,
+  resetContent,
   // Phase B
   submitExam, getExamStatus, listExams, reviewExam, takeExam,
 };
