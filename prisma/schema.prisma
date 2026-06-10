@@ -143,6 +143,7 @@ model User {
   placementResults      PlacementResult[]     // tests de positionnement
   examSubmissions       ExamSubmission[]      @relation("examSubmissions")
   examReviews           ExamSubmission[]      @relation("examReviews")
+  bulletinValidations   Bulletin[]            @relation("bulletinValidations")
 
   @@map("users")
 }
@@ -246,6 +247,7 @@ model Lesson {
   gradeLevel  GradeLevel? @relation(fields: [gradeLevelId], references: [id])
   steps       LessonStep[]
   progress    UserProgress[]
+  notes       NoteLecon[]
 
   @@index([gradeLevelId])
   @@map("lessons")
@@ -1097,6 +1099,7 @@ model GradeLevel {
   historiques       EnrollmentHistory[]
   placementResults  PlacementResult[]
   examSubmissions   ExamSubmission[]
+  bulletins         Bulletin[]
 
   @@map("grade_levels")
 }
@@ -1119,6 +1122,8 @@ model Enrollment {
   gradeLevel  GradeLevel  @relation(fields: [gradeLevelId], references: [id])
   historique      EnrollmentHistory[]
   examSubmissions ExamSubmission[]
+  notes           NoteLecon[]
+  bulletins       Bulletin[]
 
   @@unique([userId, languageId])  // Un seul cursus par langue et par élève
   @@index([gradeLevelId])
@@ -1204,6 +1209,77 @@ model ExamSubmission {
   @@index([status])
   @@index([userId, languageId])
   @@map("exam_submissions")
+}
+
+// ==================== CAHIER DE NOTES & BULLETINS (Phase C) ====================
+
+enum Trimestre {
+  T1  // Septembre – Décembre
+  T2  // Janvier – Mars
+  T3  // Avril – Juin
+}
+
+enum MentionBulletin {
+  EXCELLENT    // ≥16/20
+  TRES_BIEN    // ≥14/20
+  BIEN         // ≥12/20
+  ASSEZ_BIEN   // ≥10/20
+  PASSABLE     // ≥8/20
+  INSUFFISANT  // <8/20
+}
+
+// Note individuelle d'une leçon dans le cadre du cursus
+model NoteLecon {
+  id           String    @id @default(uuid())
+  enrollmentId String
+  lessonId     String
+  score        Float     // 0-100 (score brut UserProgress)
+  note         Float     // 0-20 (score / 5)
+  trimestre    Trimestre
+  annee        Int       // Année scolaire (ex: 2026)
+  tentative    Int       @default(1)
+  completedAt  DateTime  @default(now())
+
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson       Lesson     @relation(fields: [lessonId], references: [id])
+
+  @@unique([enrollmentId, lessonId])   // Meilleure tentative conservée
+  @@index([enrollmentId, trimestre])
+  @@map("notes_lecons")
+}
+
+// Bulletin trimestriel par élève et par langue
+model Bulletin {
+  id               String           @id @default(uuid())
+  enrollmentId     String
+  gradeLevelId     String
+  trimestre        Trimestre
+  annee            Int
+
+  // Moyennes par pilier /20
+  moyenneLangue    Float?           // LANGUE_COMMUNICATION
+  moyenneCulture   Float?           // CULTURE_CITOYENNETE
+  moyennePratique  Float?           // PRATIQUE_METIERS
+  moyenneGenerale  Float?           // Moyenne globale /20
+  mention          MentionBulletin?
+  observations     String?          // Commentaire de l'expert/admin
+
+  // Validation + PDF
+  validatedBy      String?
+  validatedAt      DateTime?
+  pdfUrl           String?
+  codeVerification String?          @unique  // ex: BUL-2026-T1-A3B4C5
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  enrollment       Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  gradeLevel       GradeLevel       @relation(fields: [gradeLevelId], references: [id])
+  validator        User?            @relation("bulletinValidations", fields: [validatedBy], references: [id])
+
+  @@unique([enrollmentId, trimestre, annee])
+  @@index([enrollmentId])
+  @@map("bulletins")
 }
 
 // Modules pédagogiques de l'app (écrans) rattachés au cursus.

@@ -118,8 +118,12 @@ app.use('/api/admin/seed-galleries', require('./routes/seedAdmin'));
 app.use('/api/validation-committee', require('./routes/validationCommittee'));
 app.use('/api/repetitor', repetitorRoutes);
 
-// ─── Cursus Scolaire (Phase A) ──────────────────────────────────────────────
+// ─── Cursus Scolaire (Phase A+B) ───────────────────────────────────────────
 app.use('/api/curriculum', require('./routes/curriculum'));
+
+// ─── Cahier de notes & Bulletins (Phase C) ─────────────────────────────────
+app.use('/api/notes',  require('./routes/notes'));
+app.use('/api/verify', require('./routes/verify'));
 
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
