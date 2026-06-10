@@ -139,6 +139,8 @@ model User {
   financeContributions  FinanceContribution[]
   depensesCreees        Depense[]             @relation("depensesCreees")
   expertVotes           ValidationVote[]      // votes du comité scientifique (rôle EXPERT)
+  enrollments           Enrollment[]          // cursus scolaire par langue
+  placementResults      PlacementResult[]     // tests de positionnement
 
   @@map("users")
 }
@@ -209,6 +211,9 @@ model Language {
   sensMots        SensMot[]
   mathContenus    MathContenu[]
   monnaieContenus MonnaieContenu[]
+  enrollments     Enrollment[]
+  placementQuestions PlacementQuestion[]
+  placementResults   PlacementResult[]
 
   @@map("languages")
 }
@@ -222,17 +227,24 @@ model Lesson {
   description String?
   ordre       Int       @default(0)
   pointsXp    Int       @default(50)
-  niveau      String    @default("A1") // A1, A2, B1, B2, C1
+  niveau      String    @default("A1") // A1, A2, B1, B2, C1 (hérité — remplacé progressivement par gradeLevelId)
   imageUrl    String?
   isActive    Boolean   @default(true)
+
+  // Cursus scolaire (Phase A)
+  gradeLevelId  String?        // Classe à laquelle la leçon appartient (null = hors cursus)
+  pilier        PilierMatiere? // Matière (pilier du Socle Commun)
+  isObligatoire Boolean        @default(true)  // Requise pour le passage de classe
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   language    Language  @relation(fields: [languageId], references: [id])
+  gradeLevel  GradeLevel? @relation(fields: [gradeLevelId], references: [id])
   steps       LessonStep[]
   progress    UserProgress[]
 
+  @@index([gradeLevelId])
   @@map("lessons")
 }
 
@@ -1033,5 +1045,139 @@ model RepetitorSession {
   @@index([statut])
   @@index([createdAt])
   @@map("repetitor_sessions")
+}
+
+// ==================== CURSUS SCOLAIRE (Phase A) ====================
+// Système de progression calqué sur le système éducatif ivoirien :
+// CP1 → CM2 (passage automatique par score), examens charnières validés
+// par le comité d'experts (Phase B), classes du secondaire, puis Parcours
+// Chercheur (3 niveaux). Le test de positionnement est plafonné à la 6ème.
+// Principe : « L'école est un cursus, la culture est un droit » — seuls les
+// modules pédagogiques sont verrouillés ; outils et patrimoine restent libres.
+
+enum PassageMode {
+  AUTO     // Passage automatique par algorithme de score (seuil + modules obligatoires)
+  COMITE   // Validation par le comité d'experts (examens charnières — Phase B)
+}
+
+// Les trois piliers de matières (Socle Commun, validable institutionnellement)
+enum PilierMatiere {
+  LANGUE_COMMUNICATION  // Alphabet, Phrases, Conjugaison, Écriture, Prononciation, Sens des Mots
+  CULTURE_CITOYENNETE   // Proverbes, Contes, Musée, Civisme, Monnaie, Arbres
+  PRATIQUE_METIERS      // Marché, Mathématiques, vocabulaire métiers (CNMCI — Phase D)
+}
+
+// Une classe du cursus (CP1, CP2 … Terminale, Chercheur I-III)
+model GradeLevel {
+  id            String      @id @default(uuid())
+  code          String      @unique  // "CP1", "CE1", "6EME", "TLE", "CHERCHEUR_1"…
+  nom           String               // "CP1", "Classe de 6ème", "Niveau Chercheur I"…
+  ordre         Int         @unique  // 1..16 — ordonne la progression
+  cycle         String               // "PRIMAIRE", "COLLEGE", "LYCEE", "CHERCHEUR"
+  passageMode   PassageMode @default(AUTO)
+  seuilPassage  Int         @default(75)  // % de moyenne requis pour le passage auto
+  description   String?
+  isActive      Boolean     @default(true)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  lessons           Lesson[]
+  enrollments       Enrollment[]
+  historiques       EnrollmentHistory[]
+  placementResults  PlacementResult[]
+
+  @@map("grade_levels")
+}
+
+// Inscription d'un utilisateur dans le cursus d'une langue.
+// Chaque langue a son cursus indépendant (un élève peut être en CM1 en Yacouba
+// et en CP1 en Baoulé). La 2ème langue se débloque à la fin du CP2 de la 1ère.
+model Enrollment {
+  id            String     @id @default(uuid())
+  userId        String
+  languageId    String
+  gradeLevelId  String     // Classe actuelle
+  isPrincipal   Boolean    @default(false)  // Langue principale du cursus
+  moyenne       Float?     // Moyenne courante dans la classe (0-100)
+  startedAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id])
+  language    Language    @relation(fields: [languageId], references: [id])
+  gradeLevel  GradeLevel  @relation(fields: [gradeLevelId], references: [id])
+  historique  EnrollmentHistory[]
+
+  @@unique([userId, languageId])  // Un seul cursus par langue et par élève
+  @@index([gradeLevelId])
+  @@map("enrollments")
+}
+
+// Livret de scolarité — trace de chaque passage de classe
+model EnrollmentHistory {
+  id             String      @id @default(uuid())
+  enrollmentId   String
+  gradeLevelId   String      // Classe validée
+  moyenneFinale  Float?
+  passageMode    PassageMode // Comment le passage a été obtenu
+  decidedBy      String?     // expertId si validation COMITE (Phase B)
+  validatedAt    DateTime    @default(now())
+
+  enrollment  Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  gradeLevel  GradeLevel  @relation(fields: [gradeLevelId], references: [id])
+
+  @@index([enrollmentId])
+  @@map("enrollment_history")
+}
+
+// Question du test de positionnement (15 min, plafonné à la 6ème)
+model PlacementQuestion {
+  id           String   @id @default(uuid())
+  languageId   String
+  niveauOrdre  Int      // Ordre du GradeLevel ciblé (difficulté croissante)
+  donnees      Json     // { question, choix[], audioUrl?, imageUrl? }
+  solution     Json     // Réponse(s) correcte(s)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  language  Language @relation(fields: [languageId], references: [id])
+
+  @@index([languageId, isActive])
+  @@map("placement_questions")
+}
+
+// Résultat du test de positionnement d'un élève
+model PlacementResult {
+  id            String   @id @default(uuid())
+  userId        String
+  languageId    String
+  score         Float    // 0-100
+  gradeLevelId  String   // Classe attribuée (plafonnée à la 6ème)
+  detail        Json?    // Réponses détaillées (audit/statistiques)
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  language    Language    @relation(fields: [languageId], references: [id])
+  gradeLevel  GradeLevel  @relation(fields: [gradeLevelId], references: [id])
+
+  @@index([userId, languageId])
+  @@map("placement_results")
+}
+
+// Modules pédagogiques de l'app (écrans) rattachés au cursus.
+// isCursus=false → outil libre jamais verrouillé (Dictionnaire, Traducteur, SOS…)
+model CurriculumModule {
+  id             String        @id @default(uuid())
+  moduleKey      String        @unique  // "alphabet", "conjugaison", "quiz"…
+  nom            String                 // Nom affiché ("Alphabet", "Conjugaison"…)
+  pilier         PilierMatiere
+  minGradeOrdre  Int           @default(1)   // Ordre de classe minimal pour déblocage
+  isCursus       Boolean       @default(true)
+  isActive       Boolean       @default(true)
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("curriculum_modules")
 }
 

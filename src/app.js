@@ -118,6 +118,9 @@ app.use('/api/admin/seed-galleries', require('./routes/seedAdmin'));
 app.use('/api/validation-committee', require('./routes/validationCommittee'));
 app.use('/api/repetitor', repetitorRoutes);
 
+// ─── Cursus Scolaire (Phase A) ──────────────────────────────────────────────
+app.use('/api/curriculum', require('./routes/curriculum'));
+
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
 
