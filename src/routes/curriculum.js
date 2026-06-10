@@ -7,6 +7,7 @@ const {
   updateGrade, updateModule, assignLessonGrade, getStats,
   listPlacementQuestions, createPlacementQuestion, updatePlacementQuestion, deletePlacementQuestion,
   seedCurriculum,
+  listEnrollmentsAdmin,
   // Phase B
   submitExam, getExamStatus, listExams, reviewExam, takeExam,
 } = require('../controllers/curriculumController');
@@ -33,6 +34,7 @@ router.put('/admin/grades/:id', authenticate, requireAdmin, updateGrade);
 router.put('/admin/modules/:id', authenticate, requireAdmin, updateModule);
 router.put('/admin/lessons/:id/grade', authenticate, requireAdmin, assignLessonGrade);
 router.get('/admin/stats', authenticate, requireAdmin, getStats);
+router.get('/admin/enrollments', authenticate, requireAdmin, listEnrollmentsAdmin);
 router.get('/admin/placement-questions', authenticate, requireAdmin, listPlacementQuestions);
 router.post('/admin/placement-questions', authenticate, requireAdmin, createPlacementQuestion);
 router.put('/admin/placement-questions/:id', authenticate, requireAdmin, updatePlacementQuestion);

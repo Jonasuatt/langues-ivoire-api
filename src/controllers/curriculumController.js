@@ -682,6 +682,23 @@ const takeExam = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// GET /api/curriculum/admin/enrollments — liste des inscriptions pour le CMS (Phase H)
+const listEnrollmentsAdmin = async (req, res, next) => {
+  try {
+    const { languageId } = req.query;
+    const enrollments = await prisma.enrollment.findMany({
+      where: { ...(languageId && { languageId }) },
+      include: {
+        user:       { select: { id: true, nom: true, prenom: true, email: true } },
+        language:   { select: { id: true, nom: true, code: true, emoji: true } },
+        gradeLevel: { select: { id: true, nom: true, cycle: true, ordre: true } },
+      },
+      orderBy: [{ language: { nom: 'asc' } }, { gradeLevel: { ordre: 'asc' } }],
+    });
+    res.json({ enrollments });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getGrades, getModules,
   getPlacementTest, submitPlacementTest,
@@ -689,6 +706,7 @@ module.exports = {
   updateGrade, updateModule, assignLessonGrade, getStats,
   listPlacementQuestions, createPlacementQuestion, updatePlacementQuestion, deletePlacementQuestion,
   seedCurriculum,
+  listEnrollmentsAdmin,
   // Phase B
   submitExam, getExamStatus, listExams, reviewExam, takeExam,
 };
