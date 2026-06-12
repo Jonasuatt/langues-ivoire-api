@@ -11,8 +11,8 @@ const { notifyUser } = require('../utils/notify');
 const prisma = new PrismaClient();
 
 // Ordre minimal dans la langue principale pour débloquer une 2ème langue
-// (fin du CP2 = être en CE1, ordre 3)
-const ORDRE_DEBLOCAGE_LANGUE_SECONDAIRE = 3;
+// (être en 6ème = ordre 7, après avoir passé les examens de passage)
+const ORDRE_DEBLOCAGE_LANGUE_SECONDAIRE = 7;
 
 // Plafond du test de positionnement : la 6ème (ordre 7).
 // Personne ne saute le secondaire ni les examens validés par le comité.
@@ -117,7 +117,7 @@ const submitPlacementTest = async (req, res, next) => {
     });
     if (principal && principal.gradeLevel.ordre < ORDRE_DEBLOCAGE_LANGUE_SECONDAIRE) {
       return res.status(403).json({
-        error: `Terminez d'abord le CP2 en ${principal.language.nom} pour débloquer une nouvelle langue`,
+        error: `Passez en 6ème en ${principal.language.nom} pour débloquer une nouvelle langue d'apprentissage`,
         requiredGradeOrdre: ORDRE_DEBLOCAGE_LANGUE_SECONDAIRE,
       });
     }
