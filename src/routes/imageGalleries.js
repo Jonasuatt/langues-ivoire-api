@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Routes Galeries d'Images
  * Public  : GET /api/image-galleries, GET /api/image-galleries/rubriques, GET /api/image-galleries/:id
@@ -6,8 +7,6 @@
  */
 const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

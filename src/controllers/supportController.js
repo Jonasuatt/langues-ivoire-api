@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 // Utilisateur : créer un message
 const createMessage = async (req, res, next) => {

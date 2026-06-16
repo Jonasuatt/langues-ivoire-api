@@ -1,10 +1,9 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Route publique — Phrases utiles / SOS
  * Accessible sans authentification (lecture seule)
  */
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // GET /api/phrases?languageCode=dioula&categorie=urgence&limit=50
 router.get('/', async (req, res, next) => {

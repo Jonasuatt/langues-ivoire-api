@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 // Public — contenus actifs
 const getMonnaieContenus = async (req, res, next) => {

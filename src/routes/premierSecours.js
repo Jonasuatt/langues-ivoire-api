@@ -1,7 +1,6 @@
+﻿const prisma = require('../lib/prisma');
 const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // GET /api/premiers-secours?languageId=X&situation=X&limit=50
 router.get('/', async (req, res, next) => {

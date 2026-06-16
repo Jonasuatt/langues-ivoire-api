@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Route d'administration : seed des galeries et trésors en production.
  * Accessible uniquement aux SUPER_ADMIN.
@@ -7,8 +8,6 @@
  */
 const router = require('express').Router();
 const { authenticate, requireAdmin } = require('../middleware/auth');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // Picsum Photos — images stables par seed, pas de restriction CORS/hotlink
 const P = (seed, w = 640, h = 430) => `https://picsum.photos/seed/${seed}/${w}/${h}`;

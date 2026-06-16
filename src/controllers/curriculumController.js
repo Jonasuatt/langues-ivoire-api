@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Cursus Scolaire (Phase A)
  * -------------------------
@@ -6,9 +7,7 @@
  * - Passage automatique de classe (mode AUTO : seuil + leçons obligatoires)
  * - Les paliers COMITE (CM2→6ème, 3ème→2nde, lycée…) sont gérés en Phase B
  */
-const { PrismaClient } = require('@prisma/client');
 const { notifyUser } = require('../utils/notify');
-const prisma = new PrismaClient();
 
 // Ordre minimal dans la langue principale pour débloquer une 2ème langue
 // (être en 6ème = ordre 7, après avoir passé les examens de passage)

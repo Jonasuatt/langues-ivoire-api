@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 // Endpoint de synchronisation globale pour le mode offline de l'app mobile
 const fullSync = async (req, res, next) => {

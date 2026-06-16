@@ -1,10 +1,9 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Route publique — Badges disponibles
  * Accessible sans authentification (lecture seule)
  */
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // GET /api/badges — liste tous les badges actifs
 router.get('/', async (req, res, next) => {

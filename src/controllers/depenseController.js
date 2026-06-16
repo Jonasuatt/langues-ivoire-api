@@ -1,9 +1,8 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * depenseController.js
  * Gestion des dépenses financières de la plateforme Langues Ivoire
  */
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 // ─── Lister toutes les dépenses ──────────────────────────────────────────────
 const getDepenses = async (req, res) => {

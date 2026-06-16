@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 // GET /api/videos — Liste publique (mobile)
 const getVideos = async (req, res, next) => {

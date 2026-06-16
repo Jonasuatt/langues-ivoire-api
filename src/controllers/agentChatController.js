@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+﻿const prisma = require('../lib/prisma');
 const Anthropic = require('@anthropic-ai/sdk');
 
-const prisma = new PrismaClient();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // Extraire les mots-clés d'une question utilisateur

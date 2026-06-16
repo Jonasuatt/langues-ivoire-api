@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Workflow de certification ILA — Comité scientifique de 5 experts
  *
@@ -6,8 +7,6 @@
  *                                          → REVISION_REQUESTED (quorum 3/5)
  *                                          → REJECTED (quorum 3/5)
  */
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 const QUORUM = 3;          // votes requis pour changer de statut
 const COMMITTEE_SIZE = 5;  // taille totale du comité

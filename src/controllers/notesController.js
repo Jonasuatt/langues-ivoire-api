@@ -1,8 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
+﻿const prisma = require('../lib/prisma');
 const { v4: uuidv4 } = require('uuid');
 const { notifyUser } = require('../utils/notify');
 
-const prisma = new PrismaClient();
 
 // --- Helpers ---
 

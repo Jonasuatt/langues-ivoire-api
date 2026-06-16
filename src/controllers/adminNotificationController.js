@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 /**
  * Envoyer une notification à tous les utilisateurs ou à un utilisateur ciblé

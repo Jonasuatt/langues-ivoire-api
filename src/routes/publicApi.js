@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * LINGUA Africa — API Publique v1
  * Accès en lecture seule pour partenaires, chercheurs et apps tierces
@@ -14,11 +15,9 @@
 
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { PrismaClient } = require('@prisma/client');
 const apiKeyAuth = require('../middleware/apiKey');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Rate limit spécifique à l'API publique : 60 req/min par clé
 const publicLimit = rateLimit({

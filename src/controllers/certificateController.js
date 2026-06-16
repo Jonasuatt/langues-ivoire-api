@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 const NIVEAU_LABELS = {
   A1: 'Débutant', A2: 'Élémentaire',

@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const { Readable } = require('stream');

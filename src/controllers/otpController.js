@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * otpController.js — LANGUES IVOIRE
  * Authentification par numéro de téléphone + OTP SMS.
@@ -9,11 +10,9 @@
  *   POST /auth/register-phone    { telephone, code, prenom, nom, genre? }
  */
 
-const { PrismaClient } = require('@prisma/client');
 const jwt              = require('jsonwebtoken');
 const { sendOTP }      = require('../services/smsService');
 
-const prisma = new PrismaClient();
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 

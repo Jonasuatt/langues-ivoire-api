@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+﻿const prisma = require('../lib/prisma');
 
 // POST /api/finance/contributions — Enregistrer une contribution financière
 const createContribution = async (req, res, next) => {

@@ -1,3 +1,4 @@
+﻿const prisma = require('../lib/prisma');
 /**
  * Routes Dialogues du Marché
  * Public  : GET /api/marche-dialogues          — liste par langue
@@ -6,8 +7,6 @@
  */
 const router = require('express').Router();
 const { authenticate, requireEditor } = require('../middleware/auth');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 const INCLUDE = {
   language: { select: { nom: true, code: true } },
