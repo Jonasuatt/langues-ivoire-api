@@ -207,11 +207,11 @@ async function computeGradeProgress(userId, enrollment) {
       isObligatoire: true,
       isActive: true,
     },
-    select: { id: true, titre: true, pointsXp: true },
+    select: { id: true, titre: true, pointsXp: true, trimestre: true, semaine: true },
   });
 
   if (lessons.length === 0) {
-    return { lessonsTotal: 0, lessonsCompleted: 0, moyenne: null, readyForPromotion: false, contentAvailable: false, lessons: [] };
+    return { lessonsTotal: 0, lessonsCompleted: 0, moyenne: null, readyForPromotion: false, contentAvailable: false, lessons: [], byTrimestre: {} };
   }
 
   const progress = await prisma.userProgress.findMany({
@@ -227,6 +227,21 @@ async function computeGradeProgress(userId, enrollment) {
   const allDone = completed.length === lessons.length;
   const readyForPromotion = allDone && moyenne !== null && moyenne >= seuil;
 
+  const lessonsList = lessons.map(l => ({
+    id: l.id, titre: l.titre,
+    trimestre: l.trimestre ?? null,
+    semaine:   l.semaine   ?? null,
+    statut: progressMap[l.id]?.statut ?? 'not_started',
+    score:  progressMap[l.id]?.score  ?? null,
+  }));
+
+  // Regrouper par trimestre pour l'affichage mobile
+  const byTrimestre = { T1: [], T2: [], T3: [], null: [] };
+  for (const l of lessonsList) {
+    const key = l.trimestre ?? 'null';
+    (byTrimestre[key] = byTrimestre[key] ?? []).push(l);
+  }
+
   return {
     lessonsTotal: lessons.length,
     lessonsCompleted: completed.length,
@@ -234,11 +249,8 @@ async function computeGradeProgress(userId, enrollment) {
     seuil,
     readyForPromotion,
     contentAvailable: true,
-    lessons: lessons.map(l => ({
-      id: l.id, titre: l.titre,
-      statut: progressMap[l.id]?.statut ?? 'not_started',
-      score: progressMap[l.id]?.score ?? null,
-    })),
+    lessons: lessonsList,
+    byTrimestre,
   };
 }
 
@@ -390,13 +402,15 @@ const updateModule = async (req, res, next) => {
 // PUT /api/curriculum/admin/lessons/:id/grade — rattacher une leçon à une classe/matière
 const assignLessonGrade = async (req, res, next) => {
   try {
-    const { gradeLevelId, pilier, isObligatoire } = req.body;
+    const { gradeLevelId, pilier, isObligatoire, trimestre, semaine } = req.body;
     const lesson = await prisma.lesson.update({
       where: { id: req.params.id },
       data: {
         gradeLevelId: gradeLevelId || null,
-        ...(pilier !== undefined && { pilier: pilier || null }),
+        ...(pilier      !== undefined && { pilier:      pilier      || null }),
         ...(isObligatoire !== undefined && { isObligatoire }),
+        ...(trimestre   !== undefined && { trimestre:   trimestre   || null }),
+        ...(semaine     !== undefined && { semaine:     semaine     ? parseInt(semaine) : null }),
       },
       include: { gradeLevel: { select: { code: true, nom: true } } },
     });

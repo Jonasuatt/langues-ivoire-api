@@ -244,6 +244,10 @@ model Lesson {
   pilier        PilierMatiere? // Matière (pilier du Socle Commun)
   isObligatoire Boolean        @default(true)  // Requise pour le passage de classe
 
+  // Progression trimestrielle (Phase C1 — alignement DPFC)
+  trimestre     Trimestre?     // T1 / T2 / T3 — période dans l'année scolaire
+  semaine       Int?           // Semaine dans le trimestre (1-12)
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
