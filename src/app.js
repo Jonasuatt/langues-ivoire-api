@@ -124,6 +124,7 @@ app.use('/api/curriculum', require('./routes/curriculum'));
 // ─── Cahier de notes & Bulletins (Phase C) ─────────────────────────────────
 app.use('/api/notes',  require('./routes/notes'));
 app.use('/api/verify', require('./routes/verify'));
+app.use('/api/fiches', require('./routes/fiches'));
 
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
