@@ -58,4 +58,14 @@ router.get('/mes-certificats-cursus',           authenticate,              getMe
 router.get('/admin/certificats-cursus',         authenticate, requireAdmin, listCertificatsAdmin);
 router.get('/certificat-cursus/:id/html',       authenticate,              getCertificatHtml);
 
+// ----- Phase D1 : Filières Métiers -----
+const {
+  listFilieres, choisirFiliere, listFilieresAdmin, createFiliere, updateFiliere,
+} = require('../controllers/filieresController');
+router.get('/filieres',                   listFilieres);                                      // public
+router.post('/enrollments/:languageId/choisir-filiere', authenticate, choisirFiliere);        // élève
+router.get('/admin/filieres',             authenticate, requireAdmin, listFilieresAdmin);
+router.post('/admin/filieres',            authenticate, requireAdmin, createFiliere);
+router.put('/admin/filieres/:id',         authenticate, requireAdmin, updateFiliere);
+
 module.exports = router;

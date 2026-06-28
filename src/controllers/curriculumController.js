@@ -264,6 +264,7 @@ const getEnrollmentDetail = async (req, res, next) => {
       include: {
         gradeLevel: true,
         language: { select: { id: true, nom: true, code: true } },
+        filiere:    true,
         historique: { include: { gradeLevel: { select: { nom: true, code: true, cycle: true } } }, orderBy: { validatedAt: 'asc' } },
       },
     });
@@ -718,6 +719,7 @@ const listEnrollmentsAdmin = async (req, res, next) => {
         user:       { select: { id: true, nom: true, prenom: true, email: true } },
         language:   { select: { id: true, nom: true, code: true, emoji: true } },
         gradeLevel: { select: { id: true, nom: true, cycle: true, ordre: true } },
+        filiere:    { select: { id: true, nom: true, code: true, emoji: true } },
       },
       orderBy: [{ language: { nom: 'asc' } }, { gradeLevel: { ordre: 'asc' } }],
     });

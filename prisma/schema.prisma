@@ -1127,6 +1127,7 @@ model Enrollment {
   userId        String
   languageId    String
   gradeLevelId  String     // Classe actuelle
+  filiereId     String?    // Filière choisie au lycée (Phase D1)
   isPrincipal   Boolean    @default(false)  // Langue principale du cursus
   moyenne       Float?     // Moyenne courante dans la classe (0-100)
   startedAt     DateTime   @default(now())
@@ -1135,6 +1136,7 @@ model Enrollment {
   user        User        @relation(fields: [userId], references: [id])
   language    Language    @relation(fields: [languageId], references: [id])
   gradeLevel  GradeLevel  @relation(fields: [gradeLevelId], references: [id])
+  filiere     Filiere?    @relation(fields: [filiereId],   references: [id])
   historique      EnrollmentHistory[]
   examSubmissions ExamSubmission[]
   notes           NoteLecon[]
@@ -1143,6 +1145,25 @@ model Enrollment {
   @@unique([userId, languageId])  // Un seul cursus par langue et par élève
   @@index([gradeLevelId])
   @@map("enrollments")
+}
+
+// ==================== FILIÈRES MÉTIERS (Phase D1) ====================
+// Spécialisations choisies à l'entrée en Seconde (cycle LYCEE, ordre ≥ 11)
+
+model Filiere {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nom         String
+  description String?
+  emoji       String?
+  isActive    Boolean  @default(true)
+
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("filieres")
 }
 
 // Livret de scolarité — trace de chaque passage de classe
