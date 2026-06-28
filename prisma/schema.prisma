@@ -149,6 +149,8 @@ model User {
   examReviews           ExamSubmission[]      @relation("examReviews")
   bulletinValidations   Bulletin[]            @relation("bulletinValidations")
   fichesCrees           FichePedagogique[]    @relation("FicheCreator")
+  cursusCerts           CursusCertificate[]   @relation("CursusCerts")
+  cursusCertsIssued     CursusCertificate[]   @relation("CursusCertIssuer")
 
   @@map("users")
 }
@@ -223,7 +225,8 @@ model Language {
   placementQuestions PlacementQuestion[]
   placementResults   PlacementResult[]
   examSubmissions    ExamSubmission[]
-  fichesPedagogiques FichePedagogique[]
+  fichesPedagogiques  FichePedagogique[]
+  cursusCerts         CursusCertificate[] @relation("CursusCerts")
 
   @@map("languages")
 }
@@ -1111,6 +1114,7 @@ model GradeLevel {
   examSubmissions      ExamSubmission[]
   bulletins            Bulletin[]
   fichesPedagogiques   FichePedagogique[]
+  cursusCerts          CursusCertificate[] @relation("CursusCerts")
 
   @@map("grade_levels")
 }
@@ -1310,6 +1314,36 @@ model CurriculumModule {
   updatedAt      DateTime      @updatedAt
 
   @@map("curriculum_modules")
+}
+
+// ==================== CERTIFICATS DE FIN DE CYCLE ====================
+
+enum TypeCertificatCursus {
+  ETAPE_CP2              // Fin CP2  — Certificat de Première Étape
+  PRIMAIRE               // Fin CM2  — Certificat de Fin du Cycle Primaire
+  PREMIER_CYCLE          // Fin 3ème — Certificat de Fin du Premier Cycle Secondaire
+  MAITRISE_LINGUISTIQUE  // Fin TLE  — Certificat National de Maîtrise Linguistique
+  CHERCHEUR              // Fin Chercheur III — Diplôme de Chercheur Linguiste ILA
+}
+
+model CursusCertificate {
+  id               String                 @id @default(cuid())
+  userId           String
+  languageId       String
+  gradeLevelId     String
+  type             TypeCertificatCursus
+  codeVerification String                 @unique
+  issuedAt         DateTime               @default(now())
+  issuedById       String?
+
+  user       User       @relation("CursusCerts",   fields: [userId],      references: [id])
+  language   Language   @relation("CursusCerts",   fields: [languageId],  references: [id])
+  gradeLevel GradeLevel @relation("CursusCerts",   fields: [gradeLevelId], references: [id])
+  issuedBy   User?      @relation("CursusCertIssuer", fields: [issuedById], references: [id])
+
+  @@unique([userId, languageId, type])
+  @@index([userId])
+  @@map("cursus_certificates")
 }
 
 // ==================== FICHES PÉDAGOGIQUES ====================

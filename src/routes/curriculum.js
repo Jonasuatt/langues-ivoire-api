@@ -50,4 +50,12 @@ router.get('/admin/exams', authenticate, requireAdmin, listExams);
 router.patch('/admin/exams/:id/take', authenticate, requireAdmin, takeExam);
 router.post('/admin/exams/:id/review', authenticate, requireAdmin, reviewExam);
 
+// ----- Phase D3 : Certificats de fin de cycle -----
+const {
+  getMesCertificats, listCertificatsAdmin, getCertificatHtml,
+} = require('../controllers/cursusCertificateController');
+router.get('/mes-certificats-cursus',           authenticate,              getMesCertificats);
+router.get('/admin/certificats-cursus',         authenticate, requireAdmin, listCertificatsAdmin);
+router.get('/certificat-cursus/:id/html',       authenticate,              getCertificatHtml);
+
 module.exports = router;

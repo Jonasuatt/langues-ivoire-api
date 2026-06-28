@@ -8,6 +8,7 @@
  * - Les paliers COMITE (CM2→6ème, 3ème→2nde, lycée…) sont gérés en Phase B
  */
 const { notifyUser } = require('../utils/notify');
+const { issueCursusCertIfEligible } = require('./cursusCertificateController');
 
 // Ordre minimal dans la langue principale pour débloquer une 2ème langue
 // (être en 6ème = ordre 7, après avoir passé les examens de passage)
@@ -352,6 +353,9 @@ const checkProgression = async (req, res, next) => {
       { fromGrade: enrollment.gradeLevel.nom, toGrade: nextGrade.nom },
     );
 
+    // Émettre un certificat de fin de cycle si ce niveau est un seuil (ex : CP2 ordre=2)
+    await issueCursusCertIfEligible(req.user.id, languageId, enrollment.gradeLevel.ordre);
+
     res.json({
       promoted: true,
       from: { code: enrollment.gradeLevel.code, nom: enrollment.gradeLevel.nom },
@@ -666,6 +670,15 @@ const reviewExam = async (req, res, next) => {
           { fromGrade: currentGrade.nom, toGrade: nextGrade.nom },
         );
       }
+
+      // Émettre un certificat de fin de cycle si ce niveau est un seuil
+      // (CM2 ord=6, 3ème ord=10, Terminale ord=13, Chercheur III ord=16)
+      await issueCursusCertIfEligible(
+        enrollment.userId,
+        enrollment.languageId,
+        currentGrade.ordre,
+        reviewerId,
+      );
     } else {
       // Refusé — notifier l'élève
       await notifyUser(
