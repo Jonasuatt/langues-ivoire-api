@@ -8,6 +8,7 @@ const {
   generateBulletinBatch,
   validateBulletin,
   listBulletinsAdmin,
+  getBulletinHtml,
 } = require('../controllers/notesController');
 
 // ----- Admin (défini AVANT les routes paramétrées pour éviter le conflit /:languageId) -----
@@ -15,6 +16,7 @@ router.get('/admin/bulletins',                authenticate, requireAdmin, listBu
 router.post('/admin/bulletin',                authenticate, requireAdmin, generateBulletin);
 router.post('/admin/bulletins/batch',         authenticate, requireAdmin, generateBulletinBatch);
 router.patch('/admin/bulletin/:id/validate',  authenticate, requireAdmin, validateBulletin);
+router.get('/admin/bulletin/:id/html',        authenticate, requireAdmin, getBulletinHtml);
 
 // ----- Élève -----
 router.post('/record',                        authenticate,              recordNote);

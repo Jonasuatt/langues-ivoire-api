@@ -195,7 +195,35 @@ async function _computeAndUpsertBulletin(enrollmentId, trimestre, annee, gradeLe
     include: { gradeLevel: true },
   });
 
-  return { bulletin, nbNotes: notes.length };
+  // Recalculer le rang de toute la classe pour ce trimestre/année
+  await _updateClassRanks(gradeLevelId, trimestre, annee);
+
+  // Retourner le bulletin avec le rang mis à jour
+  const bulletinWithRang = await prisma.bulletin.findUnique({
+    where: { id: bulletin.id },
+    include: { gradeLevel: true },
+  });
+
+  return { bulletin: bulletinWithRang, nbNotes: notes.length };
+}
+
+// Recalcule et met à jour le rang de tous les élèves d'une même classe/trimestre/année
+async function _updateClassRanks(gradeLevelId, trimestre, annee) {
+  const classBulletins = await prisma.bulletin.findMany({
+    where: { gradeLevelId, trimestre, annee, moyenneGenerale: { not: null } },
+    select: { id: true, moyenneGenerale: true },
+    orderBy: { moyenneGenerale: 'desc' },
+  });
+
+  const nombreEleves = classBulletins.length;
+  await Promise.all(
+    classBulletins.map((b, idx) =>
+      prisma.bulletin.update({
+        where: { id: b.id },
+        data: { rang: idx + 1, nombreEleves },
+      })
+    )
+  );
 }
 
 // --------------------------------------------------------------------------
@@ -405,6 +433,204 @@ async function verifyBulletin(req, res) {
   }
 }
 
+// --------------------------------------------------------------------------
+// GET /api/notes/admin/bulletin/:id/html  (admin)
+// Retourne une page HTML prête à imprimer (format bulletin scolaire A4).
+// --------------------------------------------------------------------------
+const MENTION_LABELS = {
+  EXCELLENT: 'Excellent', TRES_BIEN: 'Très Bien', BIEN: 'Bien',
+  ASSEZ_BIEN: 'Assez Bien', PASSABLE: 'Passable', INSUFFISANT: 'Insuffisant',
+};
+const MENTION_COLORS = {
+  EXCELLENT: '#15803d', TRES_BIEN: '#1d4ed8', BIEN: '#0891b2',
+  ASSEZ_BIEN: '#d97706', PASSABLE: '#ea580c', INSUFFISANT: '#dc2626',
+};
+const TRIM_LABELS = { T1: '1er Trimestre (Sept – Déc)', T2: '2e Trimestre (Janv – Mars)', T3: '3e Trimestre (Avr – Juin)' };
+
+async function getBulletinHtml(req, res) {
+  try {
+    const b = await prisma.bulletin.findUnique({
+      where: { id: req.params.id },
+      include: {
+        gradeLevel: true,
+        enrollment: {
+          include: {
+            user:     { select: { nom: true, prenom: true } },
+            language: { select: { nom: true, code: true, emoji: true } },
+          },
+        },
+        validator: { select: { prenom: true, nom: true } },
+      },
+    });
+    if (!b) return res.status(404).json({ error: 'Bulletin non trouvé.' });
+
+    const eleve   = `${b.enrollment.user.prenom} ${b.enrollment.user.nom}`;
+    const langue  = `${b.enrollment.language.emoji ?? ''} ${b.enrollment.language.nom}`;
+    const mention = b.mention ? MENTION_LABELS[b.mention] : '—';
+    const mentionColor = b.mention ? MENTION_COLORS[b.mention] : '#6b7280';
+    const moy     = (v) => v != null ? `${v}/20` : '—';
+    const rang    = b.rang ? `${b.rang}${b.rang === 1 ? 'er' : 'e'} / ${b.nombreEleves ?? '?'} élèves` : '—';
+    const valide  = b.validatedAt ? `Validé le ${new Date(b.validatedAt).toLocaleDateString('fr-FR')}` : 'Non encore validé';
+    const validateur = b.validator ? `${b.validator.prenom} ${b.validator.nom}` : '—';
+
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Bulletin — ${eleve}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; }
+  .page { width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff;
+          padding: 12mm 14mm; display: flex; flex-direction: column; gap: 14px; }
+
+  /* En-tête */
+  .header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #0B3D2E; padding-bottom: 12px; }
+  .logo-circle { width: 56px; height: 56px; border-radius: 50%; background: #0B3D2E;
+                  display: flex; align-items: center; justify-content: center;
+                  color: #F47920; font-size: 22px; font-weight: 900; flex-shrink: 0; }
+  .header-text h1 { font-size: 18px; font-weight: 900; color: #0B3D2E; }
+  .header-text p  { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .header-right   { margin-left: auto; text-align: right; }
+  .header-right .trim { font-size: 13px; font-weight: 700; color: #0B3D2E; }
+  .header-right .annee { font-size: 11px; color: #6b7280; }
+
+  /* Info élève */
+  .eleve-card { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 16px;
+                display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .eleve-row { display: flex; gap: 6px; align-items: baseline; }
+  .eleve-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  .eleve-val   { font-size: 13px; font-weight: 700; color: #111; }
+
+  /* Tableau des notes */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #0B3D2E; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+  tbody tr:nth-child(even) { background: #f9fafb; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #e5e7eb; }
+  .note-val { font-weight: 700; font-size: 14px; }
+
+  /* Résumé */
+  .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .sum-card { border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; text-align: center; }
+  .sum-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; }
+  .sum-val   { font-size: 22px; font-weight: 900; margin-top: 4px; }
+  .sum-sub   { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+  /* Observations */
+  .obs-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; min-height: 60px; }
+  .obs-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
+  .obs-text  { font-size: 12px; color: #374151; }
+
+  /* Pied de page */
+  .footer { margin-top: auto; border-top: 1px solid #e5e7eb; padding-top: 10px;
+            display: flex; justify-content: space-between; align-items: flex-end; }
+  .code-block { font-size: 10px; color: #9ca3af; }
+  .code-val   { font-family: monospace; font-size: 12px; font-weight: 700; color: #0B3D2E; }
+  .valid-block { text-align: right; font-size: 10px; color: #6b7280; }
+
+  @media print {
+    body { background: #fff; }
+    .page { width: 100%; padding: 10mm 12mm; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="logo-circle">LI</div>
+    <div class="header-text">
+      <h1>LANGUES IVOIRE</h1>
+      <p>Bulletin Scolaire Trimestriel — Apprentissage des Langues Ethniques Ivoiriennes</p>
+    </div>
+    <div class="header-right">
+      <div class="trim">${TRIM_LABELS[b.trimestre] ?? b.trimestre}</div>
+      <div class="annee">Année scolaire ${b.annee}–${b.annee + 1}</div>
+    </div>
+  </div>
+
+  <div class="eleve-card">
+    <div class="eleve-row"><span class="eleve-label">Élève</span><span class="eleve-val">${eleve}</span></div>
+    <div class="eleve-row"><span class="eleve-label">Langue</span><span class="eleve-val">${langue}</span></div>
+    <div class="eleve-row"><span class="eleve-label">Classe</span><span class="eleve-val">${b.gradeLevel.nom} · ${b.gradeLevel.cycle}</span></div>
+    <div class="eleve-row"><span class="eleve-label">Rang</span><span class="eleve-val">${rang}</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Matière (Pilier)</th>
+        <th style="width:100px;text-align:center">Moyenne /20</th>
+        <th style="width:200px">Observation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>📢 Langue &amp; Communication</td>
+        <td style="text-align:center"><span class="note-val">${moy(b.moyenneLangue)}</span></td>
+        <td style="color:#6b7280;font-size:12px">Expression orale, vocabulaire, prononciation</td>
+      </tr>
+      <tr>
+        <td>🎭 Culture &amp; Citoyenneté</td>
+        <td style="text-align:center"><span class="note-val">${moy(b.moyenneCulture)}</span></td>
+        <td style="color:#6b7280;font-size:12px">Traditions, proverbes, valeurs culturelles</td>
+      </tr>
+      <tr>
+        <td>🔨 Pratique &amp; Métiers</td>
+        <td style="text-align:center"><span class="note-val">${moy(b.moyennePratique)}</span></td>
+        <td style="color:#6b7280;font-size:12px">Application pratique et vie quotidienne</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="summary">
+    <div class="sum-card">
+      <div class="sum-label">Moyenne Générale</div>
+      <div class="sum-val" style="color:#0B3D2E">${moy(b.moyenneGenerale)}</div>
+      <div class="sum-sub">sur 20 points</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">Mention</div>
+      <div class="sum-val" style="color:${mentionColor}">${mention}</div>
+      <div class="sum-sub">&nbsp;</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">Classement</div>
+      <div class="sum-val" style="color:#0B3D2E">${b.rang ?? '—'}</div>
+      <div class="sum-sub">${b.nombreEleves ? `sur ${b.nombreEleves} élèves` : ''}</div>
+    </div>
+  </div>
+
+  <div class="obs-box">
+    <div class="obs-title">Observations de l'équipe pédagogique</div>
+    <div class="obs-text">${b.observations ?? 'Aucune observation renseignée.'}</div>
+  </div>
+
+  <div class="footer">
+    <div class="code-block">
+      Code de vérification<br>
+      <span class="code-val">${b.codeVerification ?? '—'}</span>
+    </div>
+    <div class="valid-block">
+      ${valide}<br>
+      <strong>${validateur}</strong>
+    </div>
+  </div>
+
+</div>
+<script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (err) {
+    console.error('getBulletinHtml:', err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+}
+
 module.exports = {
   recordNote,
   getCahierNotes,
@@ -414,4 +640,5 @@ module.exports = {
   validateBulletin,
   listBulletinsAdmin,
   verifyBulletin,
+  getBulletinHtml,
 };
