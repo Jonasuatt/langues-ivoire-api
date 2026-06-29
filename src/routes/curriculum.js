@@ -58,6 +58,16 @@ router.get('/mes-certificats-cursus',           authenticate,              getMe
 router.get('/admin/certificats-cursus',         authenticate, requireAdmin, listCertificatsAdmin);
 router.get('/certificat-cursus/:id/html',       authenticate,              getCertificatHtml);
 
+// ----- Phase D2 : Parcours Chercheur -----
+const {
+  getDashboardChercheur, listObjectifs, createObjectif, updateObjectif, deleteObjectif,
+} = require('../controllers/chercheurController');
+router.get('/chercheur/:languageId/dashboard',    authenticate,              getDashboardChercheur);
+router.get('/admin/objectifs-chercheur',          authenticate, requireAdmin, listObjectifs);
+router.post('/admin/objectifs-chercheur',         authenticate, requireAdmin, createObjectif);
+router.put('/admin/objectifs-chercheur/:id',      authenticate, requireAdmin, updateObjectif);
+router.delete('/admin/objectifs-chercheur/:id',   authenticate, requireAdmin, deleteObjectif);
+
 // ----- Phase D1 : Filières Métiers -----
 const {
   listFilieres, choisirFiliere, listFilieresAdmin, createFiliere, updateFiliere,

@@ -1115,6 +1115,7 @@ model GradeLevel {
   bulletins            Bulletin[]
   fichesPedagogiques   FichePedagogique[]
   cursusCerts          CursusCertificate[] @relation("CursusCerts")
+  objectifsChercheur   ObjectifChercheur[]
 
   @@map("grade_levels")
 }
@@ -1164,6 +1165,31 @@ model Filiere {
   updatedAt DateTime @updatedAt
 
   @@map("filieres")
+}
+
+// ==================== PARCOURS CHERCHEUR (Phase D2) ====================
+// Objectifs de contribution requis pour progresser au sein du cycle Chercheur
+
+enum TypeObjectifChercheur {
+  AUDIO_ENREGISTREMENT  // AudioContributions validées
+  CONTRIBUTION_LANGUE   // Contributions dictionnaire publiées
+  LECON_MAITRISEE       // Leçons avec score ≥ 75
+}
+
+model ObjectifChercheur {
+  id           String                @id @default(cuid())
+  gradeLevelId String                // Chercheur I, II ou III
+  type         TypeObjectifChercheur
+  quantite     Int                   // Nombre requis pour valider ce niveau
+  description  String?
+  isActive     Boolean               @default(true)
+
+  gradeLevel   GradeLevel @relation(fields: [gradeLevelId], references: [id])
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("objectifs_chercheur")
 }
 
 // Livret de scolarité — trace de chaque passage de classe

@@ -9,6 +9,7 @@
  */
 const { notifyUser } = require('../utils/notify');
 const { issueCursusCertIfEligible } = require('./cursusCertificateController');
+const { computeChercheurProgress }  = require('./chercheurController');
 
 // Ordre minimal dans la langue principale pour débloquer une 2ème langue
 // (être en 6ème = ordre 7, après avoir passé les examens de passage)
@@ -309,6 +310,20 @@ const checkProgression = async (req, res, next) => {
     }
     if (!progression.readyForPromotion) {
       return res.json({ promoted: false, reason: 'conditions_non_remplies', progression });
+    }
+
+    // Vérification des objectifs Chercheur (Phase D2)
+    if (enrollment.gradeLevel.cycle === 'CHERCHEUR') {
+      const chercheur = await computeChercheurProgress(req.user.id, languageId, enrollment.gradeLevelId);
+      if (!chercheur.allMet) {
+        return res.json({
+          promoted: false,
+          reason: 'objectifs_chercheur_incomplets',
+          message: 'Vous devez compléter tous les objectifs de recherche avant de passer au niveau suivant.',
+          chercheurProgress: chercheur,
+          progression,
+        });
+      }
     }
 
     // Palier charnière : examen + comité d'experts (Phase B)
