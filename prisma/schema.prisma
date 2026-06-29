@@ -253,6 +253,10 @@ model Lesson {
   trimestre     Trimestre?     // T1 / T2 / T3 — période dans l'année scolaire
   semaine       Int?           // Semaine dans le trimestre (1-12)
 
+  // Métadonnées pédagogiques DPFC — Approche Par Compétences (APC)
+  competence    String?        // Compétence visée : "L'élève sera capable de..."
+  situation     String?        // Situation de communication / contexte de la leçon
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
