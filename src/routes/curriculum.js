@@ -17,6 +17,7 @@ const {
 // ----- Référentiel (élève) -----
 router.get('/grades', optionalAuth, getGrades);
 router.get('/modules', optionalAuth, getModules);
+router.get('/programme', optionalAuth, require('../controllers/programmeController'));
 
 // ----- Test de positionnement -----
 router.get('/placement/:languageId', authenticate, getPlacementTest);
