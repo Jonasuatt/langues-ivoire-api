@@ -126,6 +126,9 @@ app.use('/api/notes',  require('./routes/notes'));
 app.use('/api/verify', require('./routes/verify'));
 app.use('/api/fiches', require('./routes/fiches'));
 
+// ─── Répétition espacée (SRS) ───────────────────────────────────────────────
+app.use('/api/srs', require('./routes/srs'));
+
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
 

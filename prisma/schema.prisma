@@ -151,6 +151,7 @@ model User {
   fichesCrees           FichePedagogique[]    @relation("FicheCreator")
   cursusCerts           CursusCertificate[]   @relation("CursusCerts")
   cursusCertsIssued     CursusCertificate[]   @relation("CursusCertIssuer")
+  srsCards              SrsCard[]             // révisions espacées
 
   @@map("users")
 }
@@ -176,6 +177,7 @@ model Language {
   id              String    @id @default(uuid())
   nom             String    @unique
   code            String    @unique  // ex: "baoule", "dioula"
+  iso639_3        String?   // code ISO 639-3 (ex: "bci" Baoulé, "dyu" Dioula) — interopérabilité/archivage
   famille         String?   // Akan, Mandé, Krou, etc.
   region          String?
   locuteurs       Int?
@@ -227,6 +229,7 @@ model Language {
   examSubmissions    ExamSubmission[]
   fichesPedagogiques  FichePedagogique[]
   cursusCerts         CursusCertificate[] @relation("CursusCerts")
+  srsCards            SrsCard[]
 
   @@map("languages")
 }
@@ -1433,3 +1436,38 @@ model FichePedagogique {
   @@map("fiches_pedagogiques")
 }
 
+
+// ==================== RÉPÉTITION ESPACÉE (SRS) ====================
+
+enum SrsItemType {
+  DICTIONARY
+  PHRASE
+}
+
+model SrsCard {
+  id           String      @id @default(uuid())
+  userId       String
+  languageId   String
+  itemType     SrsItemType @default(DICTIONARY)
+  itemId       String      // id du DictionaryEntry ou UsefulPhrase
+
+  // État SM-2 (algorithme SuperMemo-2)
+  repetitions  Int      @default(0)    // répétitions réussies consécutives
+  easeFactor   Float    @default(2.5)  // facilité (1.3 min)
+  intervalDays Int      @default(0)    // intervalle courant en jours
+  dueAt        DateTime @default(now())
+  lastQuality  Int?                    // dernière note 0-5
+  lapses       Int      @default(0)    // nombre d'oublis
+  suspended    Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id])
+
+  @@unique([userId, itemType, itemId])
+  @@index([userId, dueAt])
+  @@index([userId, languageId, dueAt])
+  @@map("srs_cards")
+}
