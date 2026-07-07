@@ -129,6 +129,9 @@ app.use('/api/fiches', require('./routes/fiches'));
 // ─── Répétition espacée (SRS) ───────────────────────────────────────────────
 app.use('/api/srs', require('./routes/srs'));
 
+// ─── Mode Enseignant — classes (PEI/DPFC) ───────────────────────────────────
+app.use('/api/classrooms', require('./routes/classrooms'));
+
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
 

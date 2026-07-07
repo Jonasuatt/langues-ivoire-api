@@ -14,6 +14,8 @@ enum Role {
   CONTRIBUTOR
   EDITOR
   EXPERT        // Membre du comité scientifique de validation (ILA-UFHB)
+  TEACHER       // Enseignant — peut créer des classes et suivre ses élèves (PEI/DPFC)
+  PARTNER       // Partenaire institutionnel (écoles, associations, mairies)
   ADMIN
   SUPER_ADMIN
 }
@@ -152,6 +154,8 @@ model User {
   cursusCerts           CursusCertificate[]   @relation("CursusCerts")
   cursusCertsIssued     CursusCertificate[]   @relation("CursusCertIssuer")
   srsCards              SrsCard[]             // révisions espacées
+  classroomsTaught      Classroom[]           @relation("TeacherClassrooms")
+  classroomsJoined      ClassroomMember[]     @relation("StudentClassrooms")
 
   @@map("users")
 }
@@ -230,6 +234,7 @@ model Language {
   fichesPedagogiques  FichePedagogique[]
   cursusCerts         CursusCertificate[] @relation("CursusCerts")
   srsCards            SrsCard[]
+  classrooms          Classroom[]
 
   @@map("languages")
 }
@@ -1123,6 +1128,7 @@ model GradeLevel {
   fichesPedagogiques   FichePedagogique[]
   cursusCerts          CursusCertificate[] @relation("CursusCerts")
   objectifsChercheur   ObjectifChercheur[]
+  classrooms           Classroom[]
 
   @@map("grade_levels")
 }
@@ -1470,4 +1476,45 @@ model SrsCard {
   @@index([userId, dueAt])
   @@index([userId, languageId, dueAt])
   @@map("srs_cards")
+}
+
+// ==================== MODE ENSEIGNANT — CLASSES (PEI/DPFC) ====================
+// Un enseignant crée une classe liée à une langue (et optionnellement une
+// classe du cursus). Les élèves la rejoignent avec un code à 6 caractères.
+// L'enseignant suit la progression de ses élèves (XP, assiduité, cursus).
+
+model Classroom {
+  id           String   @id @default(uuid())
+  nom          String                    // ex: "CM2 A — École Primaire Cocody"
+  code         String   @unique          // code d'accès élève (6 car., sans ambiguïté)
+  etablissement String?                  // nom de l'école / structure
+  teacherId    String
+  languageId   String
+  gradeLevelId String?                   // classe du cursus visée (optionnel)
+  isActive     Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher    User        @relation("TeacherClassrooms", fields: [teacherId], references: [id])
+  language   Language    @relation(fields: [languageId], references: [id])
+  gradeLevel GradeLevel? @relation(fields: [gradeLevelId], references: [id])
+  members    ClassroomMember[]
+
+  @@index([teacherId])
+  @@map("classrooms")
+}
+
+model ClassroomMember {
+  id          String   @id @default(uuid())
+  classroomId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  user      User      @relation("StudentClassrooms", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, userId])
+  @@index([userId])
+  @@map("classroom_members")
 }
