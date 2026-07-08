@@ -14,7 +14,7 @@ async function main() {
 
   const user = await prisma.user.upsert({
     where: { email: EMAIL },
-    update: { role: 'TEACHER', motDePasseHash, isActive: true },
+    update: { role: 'TEACHER', motDePasseHash, isActive: true, isPremium: true },
     create: {
       nom: 'TEST',
       prenom: 'Enseignant',
@@ -23,6 +23,7 @@ async function main() {
       role: 'TEACHER',
       genre: 'M',
       isActive: true,
+      isPremium: true, // accès complet au contenu pour préparer les cours
     },
   });
 

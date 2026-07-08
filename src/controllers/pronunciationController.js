@@ -78,7 +78,8 @@ async function generateFeedback(targetWord, phonetique, pronounced, langName) {
 Le mot à prononcer est "${targetWord}" (phonétique : ${phonetique || targetWord}).
 L'apprenant a dit : "${pronounced}".
 Donne en 2 phrases maximum : 1 encouragement bref + 1 conseil concret sur la différence phonétique.
-Réponds directement en français, sans introduction.`,
+Réponds directement en français, sans introduction. Ton français doit être impeccable
+(grammaire et accords parfaits) et ne modifie jamais l'orthographe du mot "${targetWord}".`,
     }],
   });
   return msg.content[0]?.text?.trim() ?? null;
@@ -97,7 +98,8 @@ async function generatePhoneticTips(targetWord, phonetique, langName) {
         content: `Tu es un professeur de prononciation pour la langue ${langName}.
 Le mot à prononcer est "${targetWord}"${phonetique ? ` (phonétique : ${phonetique})` : ''}.
 Donne 2 conseils concrets et courts pour bien prononcer ce mot en ${langName}.
-Commence par un encouragement. Réponds en français, sans introduction.`,
+Commence par un encouragement. Réponds en français, sans introduction. Ton français doit
+être impeccable (grammaire et accords parfaits) et ne modifie jamais l'orthographe du mot "${targetWord}".`,
       }],
     });
     return msg.content[0]?.text?.trim() ?? null;

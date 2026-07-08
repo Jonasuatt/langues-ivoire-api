@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { authenticate, requireAdmin, requireEditor } = require('../middleware/auth');
-const { getUsers, updateUser, deleteUser, createMember } = require('../controllers/adminController');
+const { getUsers, updateUser, deleteUser, createMember, resetUserPassword } = require('../controllers/adminController');
 const { getBadges, getBadge, createBadge, updateBadge, deleteBadge } = require('../controllers/badgeController');
 const { sendNotification, getNotificationHistory } = require('../controllers/adminNotificationController');
 const { getPhrases, createPhrase, updatePhrase, deletePhrase } = require('../controllers/phrasesAdminController');
@@ -12,6 +12,7 @@ router.use(authenticate);
 router.get('/users',           requireAdmin, getUsers);
 router.post('/users/create',   requireAdmin, createMember);
 router.patch('/users/:id',     requireAdmin, updateUser);
+router.post('/users/:id/reset-password', requireAdmin, resetUserPassword);
 router.delete('/users/:id',    requireAdmin, deleteUser);
 
 // ── Badges — EDITOR et plus ───────────────────────────────────

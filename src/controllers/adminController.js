@@ -7,6 +7,10 @@ const getUsers = async (req, res, next) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where = {};
     if (role) where.role = role;
+    // Un ADMIN ne voit pas les comptes Super-Administrateur
+    if (req.user.role === 'ADMIN') {
+      where.role = role && role !== 'SUPER_ADMIN' ? role : { not: 'SUPER_ADMIN' };
+    }
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
@@ -102,8 +106,60 @@ const updateUser = async (req, res, next) => {
   }
 };
 
+// ── Réinitialisation de mot de passe par un administrateur ──────────────────
+// Les mots de passe sont hachés (bcrypt) : ils ne peuvent JAMAIS être affichés.
+// À la place, l'admin génère un mot de passe temporaire, montré UNE SEULE FOIS,
+// qu'il transmet à l'utilisateur (qui pourra ensuite le changer dans son profil).
+// Règles : SUPER_ADMIN → tous les comptes ; ADMIN → tous sauf ADMIN et SUPER_ADMIN.
+const TEMP_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+function generateTempPassword() {
+  let p = '';
+  for (let i = 0; i < 10; i++) p += TEMP_ALPHABET[Math.floor(Math.random() * TEMP_ALPHABET.length)];
+  return `LI-${p}`;
+}
+
+const resetUserPassword = async (req, res, next) => {
+  try {
+    const requestingRole = req.user.role;
+    const target = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, role: true, prenom: true, nom: true, email: true },
+    });
+    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    if (requestingRole === 'ADMIN' && ['SUPER_ADMIN', 'ADMIN'].includes(target.role)) {
+      return res.status(403).json({ error: 'Accès refusé : un Administrateur ne peut pas réinitialiser le mot de passe d\'un Administrateur ou d\'un Super-Administrateur.' });
+    }
+    if (target.id === req.user.id) {
+      return res.status(400).json({ error: 'Utilisez Mon Profil pour changer votre propre mot de passe.' });
+    }
+
+    const tempPassword = generateTempPassword();
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { motDePasseHash: await bcrypt.hash(tempPassword, 12) },
+    });
+
+    res.json({
+      ok: true,
+      tempPassword,
+      user: { id: target.id, prenom: target.prenom, nom: target.nom, email: target.email },
+      message: 'Mot de passe temporaire généré. Il ne sera plus jamais affiché — transmettez-le maintenant.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deleteUser = async (req, res, next) => {
   try {
+    // Un ADMIN ne peut pas désactiver un Super-Administrateur
+    const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { role: true } });
+    if (!target) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (req.user.role === 'ADMIN' && target.role === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé : vous ne pouvez pas désactiver un Super-Administrateur' });
+    }
+
     await prisma.user.update({
       where: { id: req.params.id },
       data: { isActive: false },
@@ -148,4 +204,4 @@ const createMember = async (req, res, next) => {
   }
 };
 
-module.exports = { getUsers, updateUser, deleteUser, createMember };
+module.exports = { getUsers, updateUser, deleteUser, createMember, resetUserPassword };

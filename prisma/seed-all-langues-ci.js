@@ -102,11 +102,17 @@ async function main() {
   console.log('\n💡 Pour activer une langue : cliquez "Activer" dans le CMS → onglet "Catalogue CI"');
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Erreur lors du seed :', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Exécution directe : node prisma/seed-all-langues-ci.js
+// Le catalogue est aussi importable par l'API (bouton CMS « Importer le catalogue »).
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error('❌ Erreur lors du seed :', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
+
+module.exports = { NEW_LANGUAGES };
