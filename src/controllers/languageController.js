@@ -59,12 +59,13 @@ const updateLanguage = async (req, res, next) => {
       nom, code, famille, region, locuteurs, imageDrapeau,
       description, ordreAffichage, isActive, isInMvp,
       traditionalAudioUrl, welcomeMessage,
-      lat, lng, couleur, emoji,
+      lat, lng, couleur, emoji, iso639_3,
     } = req.body;
 
     const data = {};
     if (nom               !== undefined) data.nom               = nom;
     if (code              !== undefined) data.code              = code;
+    if (iso639_3          !== undefined) data.iso639_3          = iso639_3;
     if (famille           !== undefined) data.famille           = famille;
     if (region            !== undefined) data.region            = region;
     if (locuteurs         !== undefined) data.locuteurs         = locuteurs;
