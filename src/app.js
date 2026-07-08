@@ -132,6 +132,9 @@ app.use('/api/srs', require('./routes/srs'));
 // ─── Mode Enseignant — classes (PEI/DPFC) ───────────────────────────────────
 app.use('/api/classrooms', require('./routes/classrooms'));
 
+// ─── 🧠 Cerveau Numérique — mémoire centrale ────────────────────────────────
+app.use('/api/brain', require('./routes/brain'));
+
 // ─── API Publique v1 ────────────────────────────────────────────────────────
 app.use('/api/v1/public', publicApiRoutes);
 
