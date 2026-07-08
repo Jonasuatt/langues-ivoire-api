@@ -151,4 +151,67 @@ const changeEmail = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail };
+// ─── Suppression de compte (exigence Google Play / ARTCI) ───────────────────
+// DELETE /auth/me { motDePasse? }
+// Anonymisation plutôt que suppression physique : les données personnelles
+// sont effacées (nom, email, téléphone, photo, OAuth, préférences), le compte
+// est désactivé et déconnecté partout. Les contributions linguistiques sont
+// CONSERVÉES de façon anonyme — elles font partie du corpus patrimonial
+// (intérêt légitime, aucune donnée personnelle attachée).
+const deleteMe = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ error: 'Compte introuvable.' });
+
+    // Confirmation par mot de passe si le compte en possède un
+    if (user.motDePasseHash) {
+      const { motDePasse } = req.body;
+      if (!motDePasse) return res.status(400).json({ error: 'Mot de passe requis pour confirmer la suppression.' });
+      const valid = await bcrypt.compare(motDePasse, user.motDePasseHash);
+      if (!valid) return res.status(401).json({ error: 'Mot de passe incorrect.' });
+    }
+    if (['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      return res.status(403).json({ error: 'Un compte administrateur ne peut pas s\'auto-supprimer. Contactez un Super-Administrateur.' });
+    }
+
+    await prisma.$transaction([
+      // Données personnelles rattachées → supprimées
+      prisma.srsCard.deleteMany({ where: { userId: user.id } }),
+      prisma.notification.deleteMany({ where: { userId: user.id } }),
+      prisma.classroomMember.deleteMany({ where: { userId: user.id } }),
+      // Compte → anonymisé et désactivé
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          nom: 'Supprimé',
+          prenom: 'Compte',
+          email: `deleted-${user.id}@supprime.languesivoire.ci`,
+          identifiant: null,
+          telephone: null,
+          phoneVerified: false,
+          motDePasseHash: null,
+          dateNaissance: null,
+          genre: null,
+          photo: null,
+          googleId: null,
+          facebookId: null,
+          languesFavorites: [],
+          niveauPref: null,
+          tuteurPref: null,
+          notifEnabled: false,
+          isPremium: false,
+          isActive: false,
+        },
+      }),
+    ]);
+
+    res.json({
+      ok: true,
+      message: 'Compte supprimé. Vos données personnelles ont été effacées. Vos contributions linguistiques sont conservées anonymement dans le corpus patrimonial.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail, deleteMe };

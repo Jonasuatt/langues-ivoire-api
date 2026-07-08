@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
-const { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail } = require('../controllers/authController');
-const { sendOtp, verifyOtp, loginWithPhone, loginPhoneDirect, registerWithPhone } = require('../controllers/otpController');
+const { register, login, refreshToken, getMe, updateMe, changePassword, changeEmail, deleteMe } = require('../controllers/authController');
+const { sendOtp, verifyOtp, loginWithPhone, loginPhoneDirect, registerWithPhone, resetPasswordWithOtp } = require('../controllers/otpController');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
@@ -70,6 +70,10 @@ router.post('/register-phone',
 );
 
 // ── Routes protégées ───────────────────────────────────────────────────────
+// ── Mot de passe oublié (OTP) & suppression de compte ──────────────────────
+router.post('/reset-password-otp', resetPasswordWithOtp);
+router.delete('/me', authenticate, deleteMe);
+
 router.post('/refresh', refreshToken);
 router.get('/me', authenticate, getMe);
 router.patch('/me', authenticate, updateMe);

@@ -1,4 +1,5 @@
 ﻿const prisma = require('../lib/prisma');
+const { notifyUser, notifyMany } = require('../services/pushService');
 
 /**
  * Envoyer une notification à tous les utilisateurs ou à un utilisateur ciblé
@@ -14,13 +15,11 @@ const sendNotification = async (req, res, next) => {
     }
 
     if (targetUserId) {
-      // Notification ciblée (un seul utilisateur)
+      // Notification ciblée (un seul utilisateur) — in-app + push appareil
       const user = await prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true } });
       if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-      const notification = await prisma.notification.create({
-        data: { userId: targetUserId, type, titre, corps, data: data || null },
-      });
+      const notification = await notifyUser(targetUserId, { type, titre, corps, data: data || {} });
       return res.status(201).json({ sent: 1, notifications: [notification] });
     }
 
@@ -32,17 +31,10 @@ const sendNotification = async (req, res, next) => {
 
     if (users.length === 0) return res.json({ sent: 0 });
 
-    await prisma.notification.createMany({
-      data: users.map(u => ({
-        userId: u.id,
-        type,
-        titre,
-        corps,
-        data: data || null,
-      })),
-    });
+    // In-app + push appareils (par lots — voir pushService)
+    const sent = await notifyMany(users.map(u => u.id), { type, titre, corps, data: data || {} });
 
-    res.status(201).json({ sent: users.length });
+    res.status(201).json({ sent });
   } catch (err) {
     next(err);
   }

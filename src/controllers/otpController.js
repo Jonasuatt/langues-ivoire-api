@@ -265,4 +265,36 @@ async function _checkOTP(telephone, code) {
   return { ok: true };
 }
 
-module.exports = { sendOtp, verifyOtp, loginWithPhone, loginPhoneDirect, registerWithPhone };
+// ─── Mot de passe oublié — réinitialisation par OTP ────────────────────────
+// POST /auth/reset-password-otp { telephone, code, nouveauMotDePasse }
+// L'utilisateur demande d'abord un code via POST /auth/send-otp (le compte
+// doit avoir un numéro validé), puis fournit le code + son nouveau mot de passe.
+const bcrypt = require('bcryptjs');
+
+const resetPasswordWithOtp = async (req, res, next) => {
+  try {
+    const telephone = formatPhone(req.body.telephone);
+    const { code, nouveauMotDePasse } = req.body;
+
+    if (!nouveauMotDePasse || nouveauMotDePasse.length < 8) {
+      return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 8 caractères.' });
+    }
+
+    const result = await _checkOTP(telephone, code);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+
+    const user = await prisma.user.findUnique({ where: { telephone } });
+    if (!user) return res.status(404).json({ error: 'Aucun compte associé à ce numéro.' });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { motDePasseHash: await bcrypt.hash(nouveauMotDePasse, 12) },
+    });
+
+    res.json({ ok: true, message: 'Mot de passe réinitialisé. Vous pouvez vous connecter.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { sendOtp, verifyOtp, loginWithPhone, loginPhoneDirect, registerWithPhone, resetPasswordWithOtp };

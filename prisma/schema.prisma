@@ -126,6 +126,7 @@ model User {
   languesFavorites    String[]
   notifEnabled        Boolean   @default(true)
   tuteurPref          String?
+  pushToken           String?   // token Expo Push de l'appareil (notifications serveur)
 
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
