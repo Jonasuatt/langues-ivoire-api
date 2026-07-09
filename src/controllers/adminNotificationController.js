@@ -1,25 +1,74 @@
 ﻿const prisma = require('../lib/prisma');
 const { notifyUser, notifyMany } = require('../services/pushService');
 
+// ── Normalisation du type vers l'enum NotificationType ──────────────────────
+// Le CMS (et d'autres appelants) peuvent envoyer des libellés métier ; on les
+// mappe vers l'enum Prisma pour ne jamais faire échouer un envoi.
+const VALID_TYPES = new Set([
+  'SYSTEM', 'BADGE', 'STREAK', 'LESSON', 'PROMO', 'DAILY_REMINDER',
+  'BADGE_EARNED', 'CHALLENGE', 'CULTURAL_POINT', 'STREAK_WARNING',
+  'PHONE_VALIDATED', 'BULLETIN_VALIDE', 'PASSAGE_CLASSE', 'EXAMEN_REFUSE',
+]);
+const TYPE_ALIASES = {
+  ANNONCE:   'PROMO',
+  PUBLICITE: 'PROMO',
+  REMINDER:  'DAILY_REMINDER',
+  RAPPEL:    'DAILY_REMINDER',
+  CULTURAL:  'CULTURAL_POINT',
+  CULTUREL:  'CULTURAL_POINT',
+  RECOMPENSE:'BADGE_EARNED',
+};
+function normalizeType(type) {
+  const t = String(type || 'SYSTEM').toUpperCase();
+  if (VALID_TYPES.has(t)) return t;
+  return TYPE_ALIASES[t] ?? 'SYSTEM';
+}
+
+// ── Résolution souple du destinataire ───────────────────────────────────────
+// Accepte un identifiant technique, un email ou un « Prénom Nom ».
+async function resolveTargetUser(query) {
+  const q = String(query).trim();
+  let user = await prisma.user.findUnique({ where: { id: q }, select: { id: true } }).catch(() => null);
+  if (user) return user;
+  if (q.includes('@')) {
+    return prisma.user.findFirst({
+      where: { email: { equals: q, mode: 'insensitive' } },
+      select: { id: true },
+    });
+  }
+  const mots = q.split(/\s+/).filter(Boolean);
+  if (!mots.length) return null;
+  return prisma.user.findFirst({
+    where: { AND: mots.map(m => ({ OR: [
+      { prenom: { contains: m, mode: 'insensitive' } },
+      { nom:    { contains: m, mode: 'insensitive' } },
+    ] })) },
+    select: { id: true },
+  });
+}
+
 /**
  * Envoyer une notification à tous les utilisateurs ou à un utilisateur ciblé
  * POST /api/admin/notifications/send
- * Body: { titre, corps, type, targetUserId? (null = tous), data? }
+ * Body: { titre, corps, type, targetUserId? (id, email ou nom — null = tous), data? }
  */
 const sendNotification = async (req, res, next) => {
   try {
-    const { titre, corps, type = 'SYSTEM', targetUserId, data } = req.body;
+    const { titre, corps, targetUserId, data } = req.body;
+    const type = normalizeType(req.body.type);
 
     if (!titre || !corps) {
       return res.status(400).json({ error: 'Champs obligatoires : titre, corps' });
     }
 
     if (targetUserId) {
-      // Notification ciblée (un seul utilisateur) — in-app + push appareil
-      const user = await prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true } });
-      if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+      // Notification ciblée — accepte id, email ou « Prénom Nom »
+      const user = await resolveTargetUser(targetUserId);
+      if (!user) {
+        return res.status(404).json({ error: `Aucun utilisateur trouvé pour « ${String(targetUserId).trim()} ». Essayez l'email exact ou le prénom et le nom.` });
+      }
 
-      const notification = await notifyUser(targetUserId, { type, titre, corps, data: data || {} });
+      const notification = await notifyUser(user.id, { type, titre, corps, data: data || {} });
       return res.status(201).json({ sent: 1, notifications: [notification] });
     }
 
