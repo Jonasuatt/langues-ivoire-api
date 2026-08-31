@@ -84,7 +84,24 @@ const getOverview = async (req, res, next) => {
     };
     global.totalNeurones = parLangue.reduce((s, r) => s + r.totalNeurones, 0);
 
-    res.json({ global, parLangue, generatedAt: new Date().toISOString() });
+    // ── Ce qui attend une décision humaine ────────────────────────────────
+    // Le Cerveau ne mesure pas seulement ce qui est acquis : il doit montrer
+    // ce qui reste à valider, sinon des contributions dorment sans être vues.
+    const [audiosAExaminer, audiosARevoir, contributionsEnAttente] = await Promise.all([
+      prisma.audioContribution.count({
+        where: { certificationStatus: { in: ['SUBMITTED', 'IN_REVIEW'] } },
+      }),
+      prisma.audioContribution.count({ where: { certificationStatus: 'REVISION_REQUESTED' } }),
+      prisma.contribution.count({ where: { status: 'PENDING' } }),
+    ]);
+    const aCertifier = {
+      audios: audiosAExaminer,
+      audiosARevoir,
+      contributions: contributionsEnAttente,
+      total: audiosAExaminer + audiosARevoir + contributionsEnAttente,
+    };
+
+    res.json({ global, parLangue, aCertifier, generatedAt: new Date().toISOString() });
   } catch (err) {
     next(err);
   }
