@@ -1,5 +1,6 @@
 ﻿const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
+const { notifyUser } = require('../services/pushService');
 
 const getUsers = async (req, res, next) => {
   try {
@@ -89,14 +90,14 @@ const updateUser = async (req, res, next) => {
     // ── Notification in-app lors de la validation du numéro de téléphone ──────
     if (phoneVerified === true) {
       const tel = telephone ?? user.telephone;
-      await prisma.notification.create({
-        data: {
-          userId: req.params.id,
-          type:   'PHONE_VALIDATED',
-          titre:  '📱 Numéro de téléphone activé',
-          corps:  `Votre numéro ${tel ? tel + ' a' : 'a'} été validé par l'administrateur. Vous pouvez désormais vous connecter à l'application avec votre numéro de téléphone.`,
-          data:   { telephone: tel },
-        },
+      // notifyUser crée la notification in-app ET la pousse sur l'appareil :
+      // l'utilisateur attend cette validation, il ne doit pas avoir à ouvrir
+      // l'application pour découvrir qu'elle est arrivée.
+      await notifyUser(req.params.id, {
+        type:  'PHONE_VALIDATED',
+        titre: '📱 Numéro de téléphone activé',
+        corps: `Votre numéro ${tel ? tel + ' a' : 'a'} été validé par l'administrateur. Vous pouvez désormais vous connecter à l'application avec votre numéro de téléphone.`,
+        data:  { telephone: tel },
       });
     }
 

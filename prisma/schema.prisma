@@ -1544,3 +1544,20 @@ model BrainAnswer {
   @@index([questionNorm])
   @@map("brain_answers")
 }
+
+/// Activation du numero de telephone par WhatsApp entrant.
+/// L'utilisateur ecrit lui-meme au numero Business : le message prouve la
+/// possession du numero, et la conversation reste gratuite (fenetre de
+/// service) puisqu'elle est ouverte par lui et non par la plateforme.
+model PhoneActivation {
+  id        String    @id @default(uuid())
+  code      String    @unique   // court et lisible, ex. « LI-4821 »
+  userId    String
+  telephone String?             // numero expediteur, renseigne par le webhook
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("phone_activations")
+}

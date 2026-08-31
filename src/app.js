@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -40,6 +40,7 @@ const depensesRoutes = require('./routes/depenses');
 const repetitorRoutes = require('./routes/repetitor');
 const publicApiRoutes     = require('./routes/publicApi');
 const pronunciationRoutes = require('./routes/pronunciation');
+const whatsappRoutes      = require('./routes/whatsapp');
 const { errorHandler } = require('./middleware/errorHandler');
 
 // Swagger
@@ -149,6 +150,7 @@ app.use('/api/v1/public', publicApiRoutes);
 
 // ─── Prononciation & Traducteur IA (Phase 6) ──────────────────────────────
 app.use('/api/pronunciation', pronunciationRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // ─── Documentation Swagger ─────────────────────────────────────────────────
 app.use(
