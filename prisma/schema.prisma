@@ -1519,3 +1519,28 @@ model ClassroomMember {
   @@index([userId])
   @@map("classroom_members")
 }
+
+/// Cerveau Numérique — mémoire des réponses déjà produites par l'IA.
+/// Objectif : ne jamais racheter deux fois la même réponse. Chaque appel
+/// payant enrichit définitivement le patrimoine de la plateforme.
+model BrainAnswer {
+  id           String    @id @default(uuid())
+  /// Empreinte de (portée + langue + tuteur + question normalisée) : clé de rappel.
+  cacheKey     String    @unique
+  scope        String    // 'agent' | 'tutor'
+  question     String    // question telle que posée (audit, relecture éditoriale)
+  questionNorm String    // question normalisée (sans accents ni casse)
+  reponse      String    @db.Text
+  languageId   String?
+  tutorId      String?
+  modele       String?   // modèle ayant produit la réponse
+  hits         Int       @default(0)     // nombre de réutilisations (économies réalisées)
+  isActive     Boolean   @default(true)  // invalider une réponse douteuse sans la perdre
+  lastUsedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([scope, languageId])
+  @@index([questionNorm])
+  @@map("brain_answers")
+}

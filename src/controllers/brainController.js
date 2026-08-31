@@ -90,4 +90,49 @@ const getOverview = async (req, res, next) => {
   }
 };
 
-module.exports = { getOverview };
+
+/**
+ * GET /api/brain/answers — mémoire du Cerveau, la plus réutilisée d'abord.
+ * Permet à l'équipe éditoriale de relire ce que l'IA a produit et qui est
+ * désormais servi à sa place.
+ */
+const listAnswers = async (req, res, next) => {
+  try {
+    const { scope, languageId, q, take = 50, skip = 0 } = req.query;
+    const where = {
+      ...(scope ? { scope } : {}),
+      ...(languageId ? { languageId } : {}),
+      ...(q ? { questionNorm: { contains: String(q).toLowerCase() } } : {}),
+    };
+    const [total, reponses, cumul] = await Promise.all([
+      prisma.brainAnswer.count({ where }),
+      prisma.brainAnswer.findMany({
+        where, orderBy: [{ hits: 'desc' }, { createdAt: 'desc' }],
+        take: Math.min(Number(take) || 50, 200), skip: Number(skip) || 0,
+      }),
+      prisma.brainAnswer.aggregate({ _sum: { hits: true }, _count: true }),
+    ]);
+    res.json({
+      total,
+      reponses,
+      memoire: {
+        entrees: cumul._count,
+        reutilisations: cumul._sum.hits || 0, // appels IA évités
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+/** PATCH /api/brain/answers/:id — activer/désactiver une réponse mémorisée. */
+const toggleAnswer = async (req, res, next) => {
+  try {
+    const { isActive } = req.body;
+    const maj = await prisma.brainAnswer.update({
+      where: { id: req.params.id },
+      data: { isActive: isActive !== false },
+    });
+    res.json(maj);
+  } catch (err) { next(err); }
+};
+
+module.exports = { getOverview, listAnswers, toggleAnswer };

@@ -1,3 +1,4 @@
+const brain = require('../services/brainTranslate');
 /**
  * Évaluation de la prononciation — Phase 6
  *
@@ -213,14 +214,37 @@ const translate = async (req, res, next) => {
     if (!text || !fromLang || !toLang) {
       return res.status(400).json({ error: 'text, fromLang, toLang requis' });
     }
+
+    // Sens de traduction : le mobile envoie des noms de langue ('français',
+    // 'Baoulé'), pas des codes — d'où la comparaison par alias.
+    const isToLocal = !brain.isFrench(toLang);
+    const localLang = isToLocal ? toLang : fromLang;
+
+    // ── Cerveau Numérique : la maison répond-elle déjà ? (0 token) ──────────
+    try {
+      const langue = await brain.resolveLanguage(languageCode || localLang);
+      if (langue) {
+        const hit = await brain.lookup(text, langue.id, isToLocal);
+        if (hit) {
+          const { origine, ...reponse } = hit;
+          return res.json({
+            input: text, fromLang, toLang,
+            ...reponse,
+            source: 'cerveau',
+            sourceDetail: origine,
+          });
+        }
+      }
+    } catch (e) {
+      // Le Cerveau ne doit jamais bloquer une traduction : on bascule sur l'IA.
+      console.error('[Brain] lookup:', e.message);
+    }
+
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(503).json({ error: 'Service IA non configuré' });
     }
 
     const client = new Anthropic();
-
-    const isToLocal = toLang !== 'fr';
-    const localLang = isToLocal ? toLang : fromLang;
 
     const prompt = isToLocal
       ? `Traduis ce texte du français vers le ${localLang} (langue ivoirienne).
@@ -261,6 +285,7 @@ Texte : "${text}"`;
       fromLang,
       toLang,
       ...result,
+      source: 'ia',
     });
 
   } catch (err) {

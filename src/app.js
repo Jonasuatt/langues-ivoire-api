@@ -64,8 +64,17 @@ if (process.env.NODE_ENV === 'production') {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 500,
     skip: (req) => {
-      // Exempter les requêtes authentifiées (Bearer token présent)
-      return !!(req.headers.authorization && req.headers.authorization.startsWith('Bearer '));
+      // Exempter uniquement les requêtes dont le token est RÉELLEMENT valide.
+      // (Tester la simple présence du header laissait n'importe qui contourner
+      //  la limite avec « Bearer nimportequoi ».)
+      const header = req.headers.authorization;
+      if (!header || !header.startsWith('Bearer ')) return false;
+      try {
+        require('jsonwebtoken').verify(header.slice(7), process.env.JWT_SECRET);
+        return true;
+      } catch {
+        return false;
+      }
     },
     message: { error: 'Trop de requêtes, réessayez plus tard.' },
   });

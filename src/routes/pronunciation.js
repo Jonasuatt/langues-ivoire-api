@@ -5,6 +5,7 @@ const express = require('express');
 const multer  = require('multer');
 const path    = require('path');
 const { authenticate } = require('../middleware/auth');
+const { aiLimiter } = require('../middleware/aiLimiter');
 const { evaluate, translate, transcribe } = require('../controllers/pronunciationController');
 
 const router = express.Router();
@@ -42,7 +43,7 @@ const upload = multer({
  *   - phonetique   : transcription phonétique (ex: "[akwaba]")
  *   - languageName : nom de la langue (ex: "Baoulé")
  */
-router.post('/evaluate', upload.single('audio'), evaluate); // Pas d'auth requise — accessible à tous
+router.post('/evaluate', aiLimiter, upload.single('audio'), evaluate); // Pas d'auth requise — accessible à tous
 
 /**
  * POST /api/pronunciation/translate
@@ -51,7 +52,7 @@ router.post('/evaluate', upload.single('audio'), evaluate); // Pas d'auth requis
  *   - fromLang     : langue source (ex: "français" ou "Baoulé")
  *   - toLang       : langue cible (ex: "Baoulé" ou "français")
  */
-router.post('/translate', translate); // Pas d'auth requise — traduction accessible à tous
+router.post('/translate', aiLimiter, translate); // Pas d'auth requise — traduction accessible à tous
 
 /**
  * POST /api/pronunciation/transcribe
@@ -59,6 +60,6 @@ router.post('/translate', translate); // Pas d'auth requise — traduction acces
  * Body: audio (multipart/form-data)
  * Returns: { transcript: string | null }
  */
-router.post('/transcribe', upload.single('audio'), transcribe); // Pas d'auth requise
+router.post('/transcribe', aiLimiter, upload.single('audio'), transcribe); // Pas d'auth requise
 
 module.exports = router;

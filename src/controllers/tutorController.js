@@ -1,4 +1,5 @@
 ﻿const prisma = require('../lib/prisma');
+const memory = require('../services/brainMemory');
 
 const getTutors = async (req, res, next) => {
   try {
@@ -34,6 +35,21 @@ const chatWithTutor = async (req, res, next) => {
     });
     if (!tutor) return res.status(404).json({ error: 'Tuteur non trouvé' });
 
+    // ── Cerveau Numérique ───────────────────────────────────────────────────
+    // On ne mémorise que les questions AUTONOMES : dès qu'un historique existe,
+    // la réponse dépend du fil de la conversation et n'a plus de sens isolée.
+    const autonome = !Array.isArray(conversationHistory) || conversationHistory.length === 0;
+    const memCtx = {
+      scope: 'tutor',
+      languageId: tutor.languageId,
+      tutorId: tutor.id,
+      question: (message || '').trim(),
+    };
+    if (autonome) {
+      const memorise = await memory.recall(memCtx);
+      if (memorise) return res.json({ reply: memorise, audioUrl: null, source: 'brain' });
+    }
+
     // Appel au backend IA Python (FastAPI)
     const AI_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
     const response = await fetch(`${AI_URL}/tutors/chat`, {
@@ -54,7 +70,10 @@ const chatWithTutor = async (req, res, next) => {
     if (!response.ok) throw new Error('Service IA indisponible');
 
     const aiResponse = await response.json();
-    res.json({ reply: aiResponse.reply, audioUrl: aiResponse.audioUrl || null });
+    if (autonome && aiResponse.reply) {
+      memory.remember(memCtx, aiResponse.reply, aiResponse.model || 'service-ia');
+    }
+    res.json({ reply: aiResponse.reply, audioUrl: aiResponse.audioUrl || null, source: 'ia' });
   } catch (err) {
     // Fallback si le service IA est indisponible
     res.json({

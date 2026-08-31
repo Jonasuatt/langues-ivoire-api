@@ -1,4 +1,5 @@
 ﻿const prisma = require('../lib/prisma');
+const memory = require('../services/brainMemory');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -146,6 +147,20 @@ RÈGLES ABSOLUES (ne jamais enfreindre) :
 - Ne réponds qu'aux questions liées aux langues et à la culture de Côte d'Ivoire.
 - Si la question n'a rien à voir avec la langue ou la culture ivoirienne, dis poliment que tu ne peux pas aider.`;
 
+    // ── Cerveau Numérique : cette question a-t-elle déjà été payée ? ────────
+    const memCtx = { scope: 'agent', languageId: language.id, question: message.trim() };
+    const memorise = await memory.recall(memCtx);
+    if (memorise) {
+      return res.json({
+        source: 'brain',
+        response: memorise,
+        mot: null,
+        audioUrl: null,
+        transcription: null,
+        estVoixOfficielle: false,
+      });
+    }
+
     try {
       const aiResponse = await anthropic.messages.create({
         model: 'claude-haiku-4-5',
@@ -164,6 +179,9 @@ RÈGLES ABSOLUES (ne jamais enfreindre) :
         .replace(/^#{1,6}\s+/gm, '')          // ## titres → texte
         .replace(/^\s*[-•]\s+/gm, '')         // - liste → texte
         .trim();
+
+      // Enrichit définitivement le patrimoine : cette réponse ne sera plus rachetée.
+      memory.remember(memCtx, responseText, 'claude-haiku-4-5');
 
       return res.json({
         source: 'ai',
