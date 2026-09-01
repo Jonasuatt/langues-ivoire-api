@@ -129,50 +129,99 @@ const recevoirWebhook = async (req, res) => {
     }
 
     const code = trouve[0];
-    const activation = await prisma.phoneActivation.findUnique({ where: { code } });
-    if (!activation || activation.usedAt || activation.expiresAt < new Date()) {
-      await repondreWhatsApp(expediteur,
-        "⏳ Ce code n'est plus valable. Rouvrez l'application pour en obtenir un nouveau.");
-      return;
-    }
-
     const telephone = '+' + expediteur;
 
-    // Un même numéro ne peut pas servir deux comptes.
-    const dejaPris = await prisma.user.findFirst({
-      where: { telephone, NOT: { id: activation.userId } },
-      select: { id: true },
-    });
-    if (dejaPris) {
-      await repondreWhatsApp(expediteur,
-        '⚠️ Ce numéro est déjà associé à un autre compte LANGUES IVOIRE. ' +
-        "Contactez-nous si vous pensez qu'il s'agit d'une erreur.");
+    const resultat = await activerNumero(code, telephone);
+    if (!resultat.ok) {
+      if (resultat.raison === 'numero_pris') {
+        await repondreWhatsApp(expediteur,
+          '⚠️ Ce numéro est déjà associé à un autre compte LANGUES IVOIRE. ' +
+          "Contactez-nous si vous pensez qu'il s'agit d'une erreur.");
+      } else {
+        await repondreWhatsApp(expediteur,
+          "⏳ Ce code n'est plus valable. Rouvrez l'application pour en obtenir un nouveau.");
+      }
       return;
     }
-
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: activation.userId },
-        data:  { telephone, phoneVerified: true },
-      }),
-      prisma.phoneActivation.update({
-        where: { id: activation.id },
-        data:  { telephone, usedAt: new Date() },
-      }),
-    ]);
 
     await repondreWhatsApp(expediteur,
       '✅ Numéro activé !\nVous pouvez désormais vous connecter à LANGUES IVOIRE avec ' + telephone + '.');
-
-    await notifyUser(activation.userId, {
-      type:  'PHONE_VALIDATED',
-      titre: '📱 Numéro de téléphone activé',
-      corps: 'Votre numéro ' + telephone + ' est validé. Vous pouvez maintenant vous connecter avec votre numéro.',
-      data:  { telephone },
-    });
   } catch (err) {
     console.error('[WhatsApp] traitement du message :', err.message);
   }
 };
 
-module.exports = { creerCodeActivation, statutActivation, verifierWebhook, recevoirWebhook };
+
+/**
+ * Cœur de l'activation, partagé par le webhook et la validation manuelle
+ * depuis le CMS : une seule règle métier, donc un seul comportement.
+ * @returns {Promise<{ok: boolean, raison?: string, userId?: string}>}
+ */
+async function activerNumero(code, telephone) {
+  const activation = await prisma.phoneActivation.findUnique({ where: { code } });
+  if (!activation)                      return { ok: false, raison: 'introuvable' };
+  if (activation.usedAt)                return { ok: false, raison: 'deja_utilise' };
+  if (activation.expiresAt < new Date()) return { ok: false, raison: 'expire' };
+
+  const dejaPris = await prisma.user.findFirst({
+    where: { telephone, NOT: { id: activation.userId } },
+    select: { id: true },
+  });
+  if (dejaPris) return { ok: false, raison: 'numero_pris' };
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: activation.userId },
+      data:  { telephone, phoneVerified: true },
+    }),
+    prisma.phoneActivation.update({
+      where: { id: activation.id },
+      data:  { telephone, usedAt: new Date() },
+    }),
+  ]);
+
+  await notifyUser(activation.userId, {
+    type:  'PHONE_VALIDATED',
+    titre: '📱 Numéro de téléphone activé',
+    corps: 'Votre numéro ' + telephone + ' est validé. Vous pouvez maintenant vous connecter avec votre numéro.',
+    data:  { telephone },
+  });
+
+  return { ok: true, userId: activation.userId };
+}
+
+/**
+ * POST /api/whatsapp/valider-code — validation manuelle depuis le CMS.
+ * Tant que la Cloud API n'est pas en place, l'équipe reçoit le message sur
+ * WhatsApp ordinaire : elle recopie le code et le numéro de l'expéditeur.
+ * Le code désigne le compte sans ambiguïté — plus de recherche d'utilisateur.
+ */
+const validerParCode = async (req, res, next) => {
+  try {
+    const code = String(req.body.code || '').trim().toUpperCase();
+    let telephone = String(req.body.telephone || '').replace(/[\s.\-()]/g, '');
+    if (!code || !telephone) {
+      return res.status(400).json({ error: 'Code et numéro requis.' });
+    }
+    if (!telephone.startsWith('+')) telephone = '+' + telephone.replace(/^0+/, '225');
+
+    const r = await activerNumero(code, telephone);
+    if (!r.ok) {
+      const messages = {
+        introuvable:  "Ce code n'existe pas. Vérifiez la saisie.",
+        deja_utilise: 'Ce code a déjà été utilisé.',
+        expire:       "Ce code a expiré — demandez à l'utilisateur d'en générer un nouveau.",
+        numero_pris:  'Ce numéro est déjà rattaché à un autre compte.',
+      };
+      return res.status(400).json({ error: messages[r.raison] || 'Validation impossible.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: r.userId },
+      select: { id: true, nom: true, prenom: true, email: true, telephone: true, phoneVerified: true },
+    });
+    res.json({ ok: true, user });
+  } catch (err) { next(err); }
+};
+
+module.exports = { creerCodeActivation, statutActivation, verifierWebhook, recevoirWebhook, validerParCode };
