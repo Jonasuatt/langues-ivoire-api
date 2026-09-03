@@ -26,7 +26,10 @@ function genererCode() {
 const creerCodeActivation = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    if (req.user.phoneVerified) {
+    // Un numero deja actif ne se reactive pas par megarde : il faut le demander
+    // explicitement. Le remplacement est atomique — le nouveau message WhatsApp
+    // ecrase l'ancien numero, le compte n'est jamais sans numero entre-temps.
+    if (req.user.phoneVerified && req.body.changement !== true) {
       return res.status(400).json({ error: 'Votre numéro est déjà activé.' });
     }
 
