@@ -224,4 +224,30 @@ const validerParCode = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { creerCodeActivation, statutActivation, verifierWebhook, recevoirWebhook, validerParCode };
+/** DELETE /api/whatsapp/activation — l'utilisateur retire son numero. */
+const desactiverNumero = async (req, res, next) => {
+  try {
+    // Un compte cree PAR telephone n'a ni email ni mot de passe : lui retirer
+    // son numero le priverait de tout moyen de connexion.
+    const actuel = await prisma.user.findUnique({
+      where:  { id: req.user.id },
+      select: { email: true, motDePasseHash: true },
+    });
+    if (!actuel || !actuel.email || !actuel.motDePasseHash) {
+      return res.status(400).json({
+        error: "Votre numero est votre seul moyen de connexion. Ajoutez d'abord un email et un mot de passe.",
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data:  { telephone: null, phoneVerified: false },
+    });
+    // Les codes encore en attente n'ont plus d'objet.
+    await prisma.phoneActivation.deleteMany({ where: { userId: req.user.id, usedAt: null } });
+    const { motDePasseHash, ...sansSecret } = user;
+    res.json({ ok: true, user: sansSecret });
+  } catch (err) { next(err); }
+};
+
+module.exports = { creerCodeActivation, statutActivation, verifierWebhook, recevoirWebhook, validerParCode, desactiverNumero };
