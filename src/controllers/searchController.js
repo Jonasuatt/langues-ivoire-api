@@ -4,7 +4,7 @@
  * GET /api/search?q=bonjour&langue=baoule
  *
  * Recherche globale sur :
- *   - dictionaryEntry  (mot, traduction, exemple)
+ *   - dictionaryEntry  (mot, traduction, exemplePhrase, exempleTraduction)
  *   - lesson           (titre, description)
  *   - culturalItem     (contenu, traduction, sourceEthnique)
  *
@@ -40,7 +40,8 @@ const globalSearch = async (req, res, next) => {
           OR: [
             { mot:        { contains: term, mode: 'insensitive' } },
             { traduction: { contains: term, mode: 'insensitive' } },
-            { exemple:    { contains: term, mode: 'insensitive' } },
+            { exemplePhrase:      { contains: term, mode: 'insensitive' } },
+            { exempleTraduction:  { contains: term, mode: 'insensitive' } },
           ],
         },
         take: 10,
