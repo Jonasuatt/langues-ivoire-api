@@ -1,5 +1,4 @@
 const prisma = require('../lib/prisma');
-const { alerterNouvelleProposition } = require('../services/emailService');
 
 const clean = (v, max) => String(v ?? '').trim().slice(0, max);
 
@@ -10,11 +9,10 @@ const creer = async (req, res, next) => {
     if (siteWeb) return res.status(201).json({ ok: true }); // robot : on fait semblant, on ne stocke rien
     const corps = clean(texte, 2000);
     if (corps.length < 5) return res.status(400).json({ error: 'Écrivez au moins quelques mots.' });
-    const creee = await prisma.suggestion.create({
+    await prisma.suggestion.create({
       data: { nom: clean(nom, 80) || null, contact: clean(contact, 120) || null, texte: corps, publiable: publiable === true },
     });
     res.status(201).json({ ok: true });
-    alerterNouvelleProposition(creee); // en arrière-plan : n'attend pas, n'échoue jamais
   } catch (e) { next(e); }
 };
 
