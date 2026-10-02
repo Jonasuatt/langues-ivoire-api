@@ -1561,3 +1561,21 @@ model PhoneActivation {
   @@index([userId])
   @@map("phone_activations")
 }
+
+// Propositions du public (page « Une idée ? Écrivez-nous » de languesivoire.ci)
+model Suggestion {
+  id        String    @id @default(uuid())
+  nom       String?
+  contact   String?                      // privé : jamais renvoyé par l'API publique
+  texte     String
+  publiable Boolean   @default(false)    // accord de l'auteur pour afficher son message + la réponse
+  reponse   String?
+  publiee   Boolean   @default(false)    // choix de l'équipe (possible seulement si publiable + réponse)
+  repondueLe DateTime?
+  statut    String    @default("NOUVEAU") // NOUVEAU, LU, REPONDU
+  createdAt DateTime  @default(now())
+
+  @@index([statut])
+  @@index([publiee, repondueLe])
+  @@map("suggestions")
+}
